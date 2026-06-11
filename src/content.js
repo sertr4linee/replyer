@@ -954,9 +954,9 @@
     };
     collect();
     const prevY = window.scrollY;
-    for (let i = 0; i < 3 && map.size < 35; i++) {
-      window.scrollBy(0, window.innerHeight * 1.4);
-      await sleep(750);
+    for (let i = 0; i < 7 && map.size < 60; i++) {
+      window.scrollBy(0, window.innerHeight * 1.5);
+      await sleep(700);
       collect();
     }
     window.scrollTo(0, prevY);
@@ -1039,8 +1039,16 @@
       b.setAttribute("data-replyer-badge", "1");
       b.textContent = "📡 " + score;
       b.title = reason ? `Replyer : ${reason}` : "Opportunité Replyer";
+      // Position : à gauche du cluster en-tête (icône Grok + caret « ··· ») pour ne rien chevaucher
+      let rightOffset = 96;
+      const caret = art.querySelector('[data-testid="caret"]');
+      if (caret) {
+        const ar = art.getBoundingClientRect();
+        const cr = caret.getBoundingClientRect();
+        rightOffset = Math.max(12, Math.round(ar.right - cr.left)) + 40; // largeur caret + marge pour l'icône Grok
+      }
       b.style.cssText =
-        "position:absolute;top:10px;right:50px;z-index:30;padding:2px 8px;border-radius:7px;" +
+        "position:absolute;top:10px;right:" + rightOffset + "px;z-index:30;padding:2px 8px;border-radius:7px;" +
         "font:700 12px ui-sans-serif,system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);" +
         "user-select:none;line-height:18px;" + radarBadgeStyle(score);
       b.addEventListener("click", (e) => {

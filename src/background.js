@@ -283,12 +283,13 @@ async function rankOpportunities({ apiKey, model, instructions, language, tweets
     "- PORTÉE / VÉLOCITÉ : beaucoup de vues/likes récents = beaucoup d'yeux sur ta réponse.",
     "- POTENTIEL DE CONVERSATION : un tweet qui invite au débat ou à l'apport de valeur.",
     "Pénalise : tweets hors-niche, pubs, tweets très anciens, sujets sensibles/toxiques, tweets déjà saturés où une réponse se noiera.",
-    "Ne garde QUE les vraies opportunités (score >= 45). Classe de la meilleure à la moins bonne.",
+    "Garde les opportunités pertinentes (score >= 40), classées de la meilleure à la moins bonne.",
+    "IMPORTANT : si moins de 6 tweets atteignent 40, complète avec les MEILLEURS suivants pour proposer 6 à 10 opportunités au total. Reste honnête sur les scores, mais ne renvoie pas une liste quasi vide quand le fil contient des tweets corrects.",
     'Pour chaque tweet retenu, donne une RAISON courte (max ~12 mots) expliquant pourquoi répondre.',
     'Réponds UNIQUEMENT en JSON : {"opportunities":[{"id":"<id>","score":<0-100>,"reason":"<raison>"}]}. Aucun texte hors du JSON.'
   ].join("\n");
 
-  const lines = list.slice(0, 35).map((t) => {
+  const lines = list.slice(0, 50).map((t) => {
     const bits = [];
     if (t.views != null) bits.push(`${t.views} vues`);
     if (t.likes != null) bits.push(`${t.likes} likes`);
@@ -318,7 +319,7 @@ async function rankOpportunities({ apiKey, model, instructions, language, tweets
         { role: "user", content: user }
       ],
       temperature: 0.3,
-      max_tokens: 900,
+      max_tokens: 1300,
       response_format: { type: "json_object" }
     })
   });
@@ -344,5 +345,5 @@ async function rankOpportunities({ apiKey, model, instructions, language, tweets
     .filter((o) => o && valid.has(String(o.id)))
     .map((o) => ({ id: String(o.id), score: Math.max(0, Math.min(100, parseInt(o.score, 10) || 0)), reason: String(o.reason || "").slice(0, 120) }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 12);
+    .slice(0, 15);
 }

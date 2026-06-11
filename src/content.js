@@ -699,16 +699,18 @@
     const un = art.querySelector('[data-testid="User-Name"]');
     const lines = un ? un.innerText.split("\n").map((s) => s.trim()).filter(Boolean) : [];
     const tEl = art.querySelector('[data-testid="tweetText"]');
-    return {
+    const basic = {
       id: permalinkId(art),
       name: lines[0] || "",
       handle: lines.find((l) => l.startsWith("@")) || "",
       text: (tEl ? tEl.innerText : "").trim()
     };
+    if (basic.id && basic.text) tweetCache.set(basic.id, basic); // cache de tous les tweets vus
+    return basic;
   }
 
-  // Récupère le post initial / le fil pour donner du contexte à l'IA
-  function getThreadContext(article) {
+  // Calcule le contexte (post initial / parents) depuis le DOM
+  function computeContextFromDOM(article) {
     const all = [...document.querySelectorAll('article[data-testid="tweet"]')];
     const idx = all.indexOf(article);
     const ctx = [];
@@ -722,8 +724,8 @@
 
     // Cas A : réponse explicite (timeline) → on remonte la chaîne par handle
     const head = tweetHead(article);
-    const isReply = /Replying to|En réponse à/i.test(head);
-    if (isReply && idx > 0) {
+    const hasReplyingTo = /Replying to|En réponse à/i.test(head);
+    if (hasReplyingTo && idx > 0) {
       const handles = new Set([...head.matchAll(/@(\w+)/g)].map((m) => m[1].toLowerCase()));
       const chain = [];
       for (let j = idx - 1; j >= 0 && idx - j <= 3; j--) {
@@ -743,7 +745,41 @@
       if (focused && focused !== article) add(extractBasic(focused), true);
     }
 
-    return ctx;
+    return { context: ctx, hasReplyingTo };
+  }
+
+  // Récupère le contexte avec mise en cache (persiste si le parent quitte le DOM au scroll)
+  function getThreadContext(article) {
+    const selId = permalinkId(article);
+    const { context, hasReplyingTo } = computeContextFromDOM(article);
+
+    if (context.length) {
+      if (selId) threadCache.set(selId, context); // met le post initial en cache
+      return { context, isReply: true, fromCache: false };
+    }
+
+    // Rien dans le DOM : on tente le cache (le parent a peut-être disparu au scroll)
+    if (selId && threadCache.has(selId)) {
+      return { context: threadCache.get(selId), isReply: true, fromCache: true };
+    }
+
+    // Pas de contexte trouvé : on reste sur la détection « réponse » via le label
+    return { context: [], isReply: hasReplyingTo, fromCache: false };
+  }
+
+  // Mise en cache passive des fils visibles (appelée périodiquement)
+  function cacheVisibleThreads() {
+    if (!shadowRoot) return; // inutile tant que la sidebar n'a pas servi
+    const arts = document.querySelectorAll('article[data-testid="tweet"]');
+    arts.forEach((art) => {
+      const id = permalinkId(art);
+      if (!id) return;
+      extractBasic(art); // alimente tweetCache
+      if (!threadCache.has(id)) {
+        const { context } = computeContextFromDOM(art);
+        if (context.length) threadCache.set(id, context);
+      }
+    });
   }
 
   function renderTweetCard(t) {

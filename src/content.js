@@ -691,8 +691,19 @@
     const verified = !!article.querySelector('[data-testid="icon-verified"], svg[aria-label*="Verified"], svg[aria-label*="Certifié"]');
     const group = article.querySelector('[role="group"]');
     const metrics = parseMetrics(group ? group.getAttribute("aria-label") : "");
-    const hasMedia = !!article.querySelector('[data-testid="tweetPhoto"], [data-testid="videoPlayer"], video, [data-testid="card.layoutLarge.media"]');
-    return { name, handle, timeRel, text, avatar, verified, metrics, id: permalinkId(article), hasMedia };
+    const media = extractMedia(article);
+    return { name, handle, timeRel, text, avatar, verified, metrics, id: permalinkId(article), media };
+  }
+
+  function extractMedia(article) {
+    const images = [...article.querySelectorAll('[data-testid="tweetPhoto"] img')]
+      .map((i) => i.getAttribute("src"))
+      .filter(Boolean)
+      .map((u) => u.replace(/name=\w+/, "name=large"));
+    const videoEl = article.querySelector("video");
+    const videoPoster = videoEl ? videoEl.getAttribute("poster") : null;
+    const hasVideo = !!article.querySelector('[data-testid="videoPlayer"], video');
+    return { images, videoPoster, hasVideo, has: images.length > 0 || hasVideo };
   }
 
   function extractBasic(art) {

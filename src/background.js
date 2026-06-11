@@ -185,3 +185,69 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
   if (!variants.length) throw new Error("Aucune variante exploitable renvoyée par OpenAI.");
   return variants.slice(0, n);
 }
+
+// Génère un bloc d'instructions de style (persona) à partir de l'onboarding
+// ou en "volant" le style d'un compte (analyse de ses tweets).
+async function buildStyle({ apiKey, model, mode, answers, tweets, handle }) {
+  if (!apiKey) throw new Error("Clé API OpenAI manquante.");
+
+  const system = [
+    "Tu es un expert en personal branding et copywriting sur X (Twitter).",
+    "Ta tâche : produire un BLOC D'INSTRUCTIONS DE STYLE réutilisable, qui servira de consigne à un générateur de réponses IA.",
+    "Format de sortie : 6 à 12 lignes maximum, à l'impératif, actionnables et concrètes.",
+    "Couvre : niche/sujets, ton & personnalité, vocabulaire & tics de langage, structure/format des réponses, usage des emojis, longueur, ce qu'il faut FAIRE et ÉVITER.",
+    "N'écris AUCun préambule ni conclusion. Rends UNIQUEMENT le bloc d'instructions, prêt à coller."
+  ].join("\n");
+
+  let user;
+  if (mode === "steal") {
+    const sample = (Array.isArray(tweets) ? tweets : []).slice(0, 40).map((t, i) => `[${i + 1}] ${String(t).trim()}`).join("\n");
+    if (!sample) throw new Error("Aucun tweet à analyser pour ce compte.");
+    user = [
+      `Voici un échantillon de tweets du compte ${handle ? "@" + handle.replace(/^@/, "") : "cible"}.`,
+      "Analyse SON style (ton, rythme, structure, vocabulaire, punchlines, usage des emojis, longueur, angles récurrents).",
+      "Produis des instructions pour ÉCRIRE DANS CE MÊME STYLE — sans jamais copier le contenu ni plagier des phrases, uniquement la manière.",
+      "",
+      "TWEETS :",
+      sample
+    ].join("\n");
+  } else {
+    const a = answers || {};
+    user = [
+      "Construis le style à partir des réponses de l'utilisateur à l'onboarding :",
+      `- Niche / sujets : ${a.niche || "(non précisé)"}`,
+      `- Audience cible : ${a.audience || "(non précisé)"}`,
+      `- Ton souhaité : ${a.tone || "(non précisé)"}`,
+      `- Langue principale : ${a.language || "(auto)"}`,
+      `- Emojis : ${a.emojis || "(non précisé)"}`,
+      `- Objectif sur X : ${a.goal || "(non précisé)"}`,
+      `- Exemples / inspirations / bio : ${a.examples || "(non précisé)"}`,
+      "",
+      "Synthétise tout ça en un bloc d'instructions de style cohérent et percutant."
+    ].join("\n");
+  }
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: model || "gpt-4o-mini",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user }
+      ],
+      temperature: 0.7,
+      max_tokens: 500
+    })
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try { const j = await res.json(); detail = j && j.error && j.error.message ? j.error.message : JSON.stringify(j); } catch (_) { detail = await res.text().catch(() => ""); }
+    throw new Error(`OpenAI ${res.status} : ${detail || "erreur inconnue"}`);
+  }
+  const data = await res.json();
+  const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!text) throw new Error("Style vide renvoyé par OpenAI.");
+  return text.trim();
+}

@@ -976,6 +976,23 @@
     return basic;
   }
 
+  // Détecte le trait de connexion du fil dans la colonne avatar.
+  // Un tweet "parent" connecté à sa réponse en dessous a un connecteur descendant (down).
+  function avatarConnectors(art) {
+    const av = art.querySelector('[data-testid="Tweet-User-Avatar"]');
+    if (!av) return { up: false, down: false };
+    const a = av.getBoundingClientRect();
+    let up = false, down = false;
+    art.querySelectorAll("div").forEach((d) => {
+      const r = d.getBoundingClientRect();
+      if (r.width > 0 && r.width <= 4 && r.height >= 16) {
+        if (r.top < a.top + 4) up = true;
+        if (r.bottom > a.bottom - 4) down = true;
+      }
+    });
+    return { up, down };
+  }
+
   // Calcule le contexte (post initial / parents) depuis le DOM
   function computeContextFromDOM(article) {
     const all = [...document.querySelectorAll('article[data-testid="tweet"]')];
@@ -1006,6 +1023,18 @@
       chain.reverse().forEach((b) => add(b));
     }
 
+    // Cas A2 : paire/fil connecté visuellement (sans label « Replying to »).
+    // Le tweet du dessus est un parent s'il a un connecteur descendant vers celui-ci.
+    if (!ctx.length && idx > 0) {
+      const chain = [];
+      for (let j = idx - 1; j >= 0 && idx - j <= 4; j--) {
+        const prev = all[j];
+        if (avatarConnectors(prev).down) { chain.push(extractBasic(prev)); anchorEl = prev; }
+        else break;
+      }
+      chain.reverse().forEach((b) => add(b));
+    }
+
     // Cas B : page de statut → on ajoute le tweet focalisé (le post initial)
     const urlId = (location.pathname.match(/status\/(\d+)/) || [])[1];
     const selId = permalinkId(article);
@@ -1014,7 +1043,7 @@
       if (focused && focused !== article) { add(extractBasic(focused), true); anchorEl = focused; }
     }
 
-    return { context: ctx, hasReplyingTo, anchorEl };
+    return { context: ctx, hasReplyingTo: hasReplyingTo || ctx.length > 0, anchorEl };
   }
 
   // Récupère le contexte avec mise en cache (persiste si le parent quitte le DOM au scroll)

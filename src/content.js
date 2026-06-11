@@ -413,6 +413,7 @@
     ui.selectBtn = shadowRoot.getElementById("selectBtn");
     ui.selectedWrap = shadowRoot.getElementById("selectedWrap");
     ui.tweetCard = shadowRoot.getElementById("tweetCard");
+    ui.tweetRelation = shadowRoot.getElementById("tweetRelation");
     ui.contextCard = shadowRoot.getElementById("contextCard");
     ui.generateBtn = shadowRoot.getElementById("generateBtn");
     ui.status = shadowRoot.getElementById("status");

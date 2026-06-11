@@ -13,8 +13,26 @@
     "service_worker": "src/background.js"
   },
   "action": {
-    "default_title": "Replyer — ouvrir/fermer la sidebar"
+    "default_title": "Replyer — ouvrir/fermer la sidebar",
+    "default_icon": {
+      "16": "src/icon.png",
+      "32": "src/icon.png",
+      "48": "src/icon.png",
+      "128": "src/icon.png"
+    }
   },
+  "icons": {
+    "16": "src/icon.png",
+    "32": "src/icon.png",
+    "48": "src/icon.png",
+    "128": "src/icon.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/icon.png"],
+      "matches": ["https://x.com/*", "https://twitter.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://x.com/*", "https://twitter.com/*"],

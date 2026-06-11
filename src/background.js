@@ -14,6 +14,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) }));
     return true;
   }
+  if (msg && msg.type === "RANK_OPPORTUNITIES") {
+    rankOpportunities(msg.payload)
+      .then((opportunities) => sendResponse({ ok: true, opportunities }))
+      .catch((err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) }));
+    return true;
+  }
 });
 
 function modelSupportsVision(model) {
@@ -258,4 +264,84 @@ async function buildStyle({ apiKey, model, mode, answers, tweets, handle }) {
   const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   if (!text) throw new Error("Style vide renvoyé par OpenAI.");
   return text.trim();
+}
+
+// Growth Radar : classe les meilleures opportunités de réponse dans le fil.
+async function rankOpportunities({ apiKey, model, instructions, language, tweets }) {
+  if (!apiKey) throw new Error("Clé API OpenAI manquante.");
+  const list = (Array.isArray(tweets) ? tweets : []).filter((t) => t && t.id && t.text);
+  if (!list.length) throw new Error("Aucun tweet à analyser. Scrolle un peu dans le fil puis relance.");
+
+  const persona = (instructions || "").trim();
+  const system = [
+    "Tu es un stratège de croissance sur X (Twitter). On te donne la PERSONA d'un utilisateur (sa niche, sa voix) et une liste de tweets de son fil.",
+    "Ton job : repérer les MEILLEURES opportunités où une réponse de l'utilisateur lui ferait gagner de l'audience.",
+    "Critères de score (0-100) :",
+    "- PERTINENCE avec la niche/persona (le plus important) : un tweet hors-sujet = score bas.",
+    "- FRAÎCHEUR : un tweet récent permet d'être vu tôt dans les réponses (gros bonus).",
+    "- PORTÉE / VÉLOCITÉ : beaucoup de vues/likes récents = beaucoup d'yeux sur ta réponse.",
+    "- POTENTIEL DE CONVERSATION : un tweet qui invite au débat ou à l'apport de valeur.",
+    "Pénalise : tweets hors-niche, pubs, tweets très anciens, sujets sensibles/toxiques, tweets déjà saturés où une réponse se noiera.",
+    "Ne garde QUE les vraies opportunités (score >= 45). Classe de la meilleure à la moins bonne.",
+    'Pour chaque tweet retenu, donne une RAISON courte (max ~12 mots) expliquant pourquoi répondre.',
+    'Réponds UNIQUEMENT en JSON : {"opportunities":[{"id":"<id>","score":<0-100>,"reason":"<raison>"}]}. Aucun texte hors du JSON.'
+  ].join("\n");
+
+  const lines = list.slice(0, 35).map((t) => {
+    const bits = [];
+    if (t.views != null) bits.push(`${t.views} vues`);
+    if (t.likes != null) bits.push(`${t.likes} likes`);
+    if (t.age) bits.push(`il y a ${t.age}`);
+    const meta = bits.length ? ` (${bits.join(", ")})` : "";
+    const txt = String(t.text).replace(/\s+/g, " ").slice(0, 220);
+    return `- id:${t.id} | ${t.author || "?"}${meta} : "${txt}"`;
+  });
+
+  const user = [
+    persona ? `PERSONA DE L'UTILISATEUR :\n${persona}` : "PERSONA : (non définie — utilise des critères de croissance génériques, privilégie les tweets tech/business à forte portée et récents.)",
+    language ? `Langue de l'utilisateur : ${language}.` : "",
+    "",
+    "TWEETS DU FIL :",
+    lines.join("\n"),
+    "",
+    "Classe les meilleures opportunités. Réponds uniquement avec l'objet JSON demandé."
+  ].filter(Boolean).join("\n");
+
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: model || "gpt-4o-mini",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user }
+      ],
+      temperature: 0.3,
+      max_tokens: 900,
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!res.ok) {
+    let detail = "";
+    try { const j = await res.json(); detail = j && j.error && j.error.message ? j.error.message : JSON.stringify(j); } catch (_) { detail = await res.text().catch(() => ""); }
+    throw new Error(`OpenAI ${res.status} : ${detail || "erreur inconnue"}`);
+  }
+  const data = await res.json();
+  const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!text) throw new Error("Réponse vide renvoyée par OpenAI.");
+
+  let arr = [];
+  try {
+    const parsed = JSON.parse(text);
+    arr = Array.isArray(parsed) ? parsed : (parsed.opportunities || parsed.results || []);
+  } catch (_) {
+    arr = [];
+  }
+  const valid = new Set(list.map((t) => String(t.id)));
+  return arr
+    .filter((o) => o && valid.has(String(o.id)))
+    .map((o) => ({ id: String(o.id), score: Math.max(0, Math.min(100, parseInt(o.score, 10) || 0)), reason: String(o.reason || "").slice(0, 120) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12);
 }

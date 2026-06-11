@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🤖 Replyer
+<img src="src/icon.png" width="128" alt="Replyer logo" />
+
+# Replyer
 
 ### AI-powered auto-reply assistant for X (Twitter) — built for audience growth
 
@@ -57,6 +59,11 @@ Select any tweet, capture its full context, and generate scroll-stopping replies
 - **GPT-4o Vision** — attached tweet images are analyzed so replies reference the visual (videos excluded).
 - **Conversation-aware** — the captured thread context is passed to the model.
 - Per-reply **character counter** (280 limit) with overflow warning.
+
+### 📡 Growth Radar
+- **Scan your feed** and let the AI surface the **best tweets to reply to** for *your* niche.
+- One grouped OpenAI call scores each tweet (0–100) on **relevance to your persona, freshness, reach/velocity, and conversation potential**, with a one-line reason.
+- Ranked opportunity cards with a color-coded score; **"Aller au tweet"** scrolls to and selects it, **"Répondre"** jumps straight into generation.
 
 ### Style engine
 - **Onboarding wizard** — a 7-step guided flow (niche, audience, tone, language, emojis, goal, inspirations) that synthesizes a reusable **persona** with the AI.
@@ -186,14 +193,14 @@ replyer/
 
 See the discussion below — ideas under consideration:
 
+- [x] **Growth Radar** — AI-ranked "best tweets to reply to" from your feed
 - [ ] Regenerate / "more like this" per variant
-- [ ] Multi-provider support (Anthropic Claude, local models)
-- [ ] Saved persona profiles & quick-switch
 - [ ] Tone sliders (spicy ↔ measured, short ↔ detailed)
+- [ ] Saved persona profiles & quick-switch
+- [ ] Content Studio — original tweets, quote-tweets & threads
+- [ ] Multi-provider support (Anthropic Claude, local models)
 - [ ] Reply history & favorites
-- [ ] Thread/long-form drafting
-- [ ] Smart "best tweets to reply to" suggestions
-- [ ] Quote-tweet & original-post drafting
+- [ ] In-feed highlighting of Radar opportunities
 - [ ] Keyboard shortcuts
 - [ ] Custom toolbar PNG icons
 

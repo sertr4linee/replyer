@@ -219,8 +219,8 @@
           border-bottom:1px solid var(--border); background:var(--panel);
         }
         .brand { display:flex; align-items:center; gap:10px; }
-        .logo { width:30px; height:30px; border-radius:8px; background:var(--accent); display:flex; align-items:center; justify-content:center; }
-        .logo svg { width:18px; height:18px; }
+        .logo { width:30px; height:30px; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+        .logo img { width:100%; height:100%; object-fit:cover; display:block; }
         .brand h1 { margin:0; font-size:15px; font-weight:700; letter-spacing:-.2px; color:var(--fg); }
         .brand .sub { font-size:11px; color:var(--muted-2); font-weight:500; }
         .close { background:transparent; border:none; color:var(--muted); font-size:20px; cursor:pointer; line-height:1; width:30px; height:30px; border-radius:7px; display:flex; align-items:center; justify-content:center; transition:.15s; }
@@ -373,6 +373,22 @@
         .ctx-author { color:var(--accent); font-weight:600; font-size:12.5px; margin-bottom:3px; }
         .ctx-text { font-size:13px; color:var(--muted); line-height:1.5; white-space:pre-wrap; word-break:break-word; max-height:120px; overflow:auto; }
         .badge { display:inline-block; background:var(--accent); color:var(--accent-fg); font-size:10px; padding:2px 6px; border-radius:5px; vertical-align:middle; font-weight:700; }
+
+        /* Growth Radar */
+        .radar-list { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+        .radar-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; transition:border-color .13s; }
+        .radar-card:hover { border-color:var(--border-strong); }
+        .radar-top { display:flex; align-items:flex-start; gap:10px; }
+        .radar-score { flex:none; width:42px; height:42px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; font-variant-numeric:tabular-nums; }
+        .radar-score.hot { background:rgba(62,207,142,.16); color:var(--accent); border:1px solid rgba(62,207,142,.4); }
+        .radar-score.warm { background:rgba(245,179,80,.14); color:#f5b350; border:1px solid rgba(245,179,80,.35); }
+        .radar-score.mild { background:var(--card-2); color:var(--muted); border:1px solid var(--border); }
+        .radar-main { min-width:0; flex:1; }
+        .radar-author { font-size:12.5px; font-weight:700; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .radar-reason { font-size:11.5px; color:var(--accent); margin-top:1px; line-height:1.35; }
+        .radar-text { font-size:13px; color:var(--muted); line-height:1.45; margin-top:7px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+        .radar-meta { font-size:11px; color:var(--muted-2); margin-top:7px; display:flex; gap:12px; font-variant-numeric:tabular-nums; }
+        .radar-actions { display:flex; gap:7px; margin-top:10px; }
         section { display:none; }
         section.active { display:block; animation:fade .2s ease; }
         @keyframes fade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
@@ -381,9 +397,7 @@
       <div class="panel" id="panel">
         <header>
           <div class="brand">
-            <span class="logo">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="#fff"><path d="M12 2a2 2 0 0 1 2 2v1h3a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3h-3.6L8 21.5V18H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h3V4a2 2 0 0 1 2-2Zm-3 8.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm6 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z"/></svg>
-            </span>
+            <span class="logo"><img src="${chrome.runtime.getURL("src/icon.png")}" alt="Replyer"></span>
             <div>
               <h1>Replyer</h1>
               <div class="sub">Réponses IA · Croissance X</div>
@@ -394,7 +408,8 @@
 
         <div class="tabs">
           <div class="tab active" data-tab="reply">⚡ Répondre</div>
-          <div class="tab" data-tab="config">⚙️ Configuration</div>
+          <div class="tab" data-tab="radar">📡 Radar</div>
+          <div class="tab" data-tab="config">⚙️ Config</div>
         </div>
 
         <div class="body">
@@ -423,11 +438,19 @@
                 <div class="draft-counter" id="draftCounter">0 / 280</div>
                 <div class="actions">
                   <button class="ghost" id="copyBtn">📋 Copier</button>
-                  <button class="ghost" id="insertBtn" style="background:#1d9bf0;border-color:#1d9bf0;color:#fff;">↩️ Insérer dans X</button>
+                  <button class="ghost" id="insertBtn" style="background:var(--accent);border-color:transparent;color:var(--accent-fg);">↩️ Insérer dans X</button>
                 </div>
                 <p class="hint">« Insérer » ouvre le champ de réponse du tweet et y colle le texte. Tu valides l'envoi toi-même sur X.</p>
               </div>
             </div>
+          </section>
+
+          <!-- ONGLET RADAR -->
+          <section id="tab-radar">
+            <button class="primary" id="radarScan" style="margin-top:0;">📡 Scanner le fil</button>
+            <p class="hint">Replyer analyse les tweets de ton fil et classe les <b>meilleures opportunités de réponse</b> selon ta niche (onglet Config), leur fraîcheur et leur portée.</p>
+            <div class="status info" id="radarStatus"></div>
+            <div class="radar-list" id="radarList"></div>
           </section>
 
           <!-- ONGLET CONFIG -->
@@ -518,6 +541,10 @@
     ui.draftCounter = shadowRoot.getElementById("draftCounter");
     ui.copyBtn = shadowRoot.getElementById("copyBtn");
     ui.insertBtn = shadowRoot.getElementById("insertBtn");
+    // radar
+    ui.radarScan = shadowRoot.getElementById("radarScan");
+    ui.radarStatus = shadowRoot.getElementById("radarStatus");
+    ui.radarList = shadowRoot.getElementById("radarList");
     // config
     ui.apiKey = shadowRoot.getElementById("apiKey");
     ui.model = shadowRoot.getElementById("model");
@@ -569,6 +596,7 @@
       navigator.clipboard.writeText(ui.replyText.value || "").then(() => setStatus("Copié ✓", "ok"));
     });
     ui.insertBtn.addEventListener("click", () => insertIntoX(ui.replyText.value));
+    ui.radarScan.addEventListener("click", () => runRadar());
     ui.saveBtn.addEventListener("click", () => {
       state.config.apiKey = ui.apiKey.value.trim();
       state.config.model = ui.model.value;
@@ -757,6 +785,133 @@
         ui.cfgStatus.textContent = `Style de @${handle} ajouté à tes instructions ✓`;
       }
     );
+  }
+
+  // ── Growth Radar ─────────────────────────────────────────────────────────
+  function switchTab(name) {
+    shadowRoot.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+    shadowRoot.querySelectorAll("section").forEach((s) => s.classList.remove("active"));
+    const sec = shadowRoot.getElementById("tab-" + name);
+    if (sec) sec.classList.add("active");
+    if (name === "config") autoGrow(ui.instructions);
+  }
+
+  function findArticleById(id) {
+    return [...document.querySelectorAll('article[data-testid="tweet"]')].find((a) => permalinkId(a) === id) || null;
+  }
+
+  async function scanTimeline() {
+    const map = new Map();
+    const collect = () => {
+      document.querySelectorAll('article[data-testid="tweet"]').forEach((a) => {
+        if (/promoted|sponsoris|publicité|ad ·/i.test(a.innerText.slice(0, 160))) return; // pubs
+        const id = permalinkId(a);
+        if (!id) return;
+        const tEl = a.querySelector('[data-testid="tweetText"]');
+        const text = tEl ? tEl.innerText.trim() : "";
+        if (text.length < 15) return;
+        const t = extractTweet(a);
+        map.set(id, { id, name: t.name, handle: t.handle, text, metrics: t.metrics || {}, timeRel: t.timeRel, hasMedia: t.media && t.media.has });
+      });
+    };
+    collect();
+    const prevY = window.scrollY;
+    for (let i = 0; i < 3 && map.size < 35; i++) {
+      window.scrollBy(0, window.innerHeight * 1.4);
+      await sleep(750);
+      collect();
+    }
+    window.scrollTo(0, prevY);
+    return [...map.values()];
+  }
+
+  async function runRadar() {
+    if (!state.config.apiKey) { ui.radarStatus.className = "status err"; ui.radarStatus.textContent = "Ajoute ta clé API OpenAI (onglet Config)."; return; }
+    ui.radarScan.disabled = true;
+    ui.radarStatus.className = "status info";
+    ui.radarStatus.textContent = "Scan du fil…";
+    ui.radarList.innerHTML = "";
+
+    const tweets = await scanTimeline();
+    if (tweets.length < 3) {
+      ui.radarScan.disabled = false;
+      ui.radarStatus.className = "status err";
+      ui.radarStatus.textContent = "Trop peu de tweets dans le fil. Scrolle un peu et relance.";
+      return;
+    }
+
+    ui.radarStatus.textContent = `${tweets.length} tweets — analyse IA en cours…`;
+    ui.radarList.innerHTML = '<div class="skel"><div class="skel-line w50"></div><div class="skel-line w90"></div></div>'.repeat(3);
+    const dataById = new Map(tweets.map((t) => [t.id, t]));
+
+    chrome.runtime.sendMessage(
+      {
+        type: "RANK_OPPORTUNITIES",
+        payload: {
+          apiKey: state.config.apiKey,
+          model: state.config.model,
+          instructions: state.config.instructions,
+          language: state.config.language,
+          tweets: tweets.map((t) => ({ id: t.id, author: [t.name, t.handle].filter(Boolean).join(" "), text: t.text, views: t.metrics.views, likes: t.metrics.likes, age: t.timeRel }))
+        }
+      },
+      (resp) => {
+        ui.radarScan.disabled = false;
+        if (chrome.runtime.lastError) { ui.radarList.innerHTML = ""; ui.radarStatus.className = "status err"; ui.radarStatus.textContent = "Erreur : " + chrome.runtime.lastError.message; return; }
+        if (!resp || !resp.ok) { ui.radarList.innerHTML = ""; ui.radarStatus.className = "status err"; ui.radarStatus.textContent = "Erreur : " + ((resp && resp.error) || "inconnue"); return; }
+        const opps = resp.opportunities || [];
+        if (!opps.length) { ui.radarList.innerHTML = ""; ui.radarStatus.className = "status info"; ui.radarStatus.textContent = "Aucune opportunité pertinente ici. Affine ta niche (Config) ou scrolle ailleurs."; return; }
+        ui.radarStatus.className = "status ok";
+        ui.radarStatus.textContent = `${opps.length} opportunité(s) classée(s) ✓`;
+        renderOpportunities(opps, dataById);
+      }
+    );
+  }
+
+  function renderOpportunities(opps, dataById) {
+    ui.radarList.innerHTML = "";
+    opps.forEach((o) => {
+      const t = dataById.get(o.id);
+      if (!t) return;
+      const cls = o.score >= 75 ? "hot" : o.score >= 55 ? "warm" : "mild";
+      const m = t.metrics || {};
+      const meta = [];
+      if (m.views != null) meta.push("👁 " + fmtCount(m.views));
+      if (m.likes != null) meta.push("♥ " + fmtCount(m.likes));
+      if (t.timeRel) meta.push("🕒 " + t.timeRel);
+      const card = document.createElement("div");
+      card.className = "radar-card";
+      card.innerHTML = `
+        <div class="radar-top">
+          <div class="radar-score ${cls}">${o.score}</div>
+          <div class="radar-main">
+            <div class="radar-author">${escapeHtml([t.name, t.handle].filter(Boolean).join(" "))}</div>
+            <div class="radar-reason">${escapeHtml(o.reason || "")}</div>
+          </div>
+        </div>
+        <div class="radar-text">${escapeHtml(t.text)}</div>
+        <div class="radar-meta">${meta.map((x) => "<span>" + escapeHtml(x) + "</span>").join("")}</div>
+        <div class="radar-actions">
+          <button class="chip goto">↗ Aller au tweet</button>
+          <button class="chip insert gen">✨ Répondre</button>
+        </div>`;
+      card.querySelector(".goto").addEventListener("click", () => goToTweet(o.id, false));
+      card.querySelector(".gen").addEventListener("click", () => goToTweet(o.id, true));
+      ui.radarList.appendChild(card);
+    });
+  }
+
+  function goToTweet(id, generate) {
+    const el = findArticleById(id);
+    if (!el) {
+      ui.radarStatus.className = "status err";
+      ui.radarStatus.textContent = "Ce tweet a quitté le fil (virtualisé). Re-scanne, ou scrolle jusqu'à lui.";
+      return;
+    }
+    switchTab("reply");
+    selectTweet(el);
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (generate) setTimeout(() => doGenerate(), 450);
   }
 
   function updateGenerateLabel() {

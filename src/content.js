@@ -881,21 +881,27 @@
   function selectTweet(article) {
     state.selectedArticle = article;
     const t = extractTweet(article);
-    const { context, isReply, fromCache } = getThreadContext(article);
+    const { context, isReply, fromCache, anchorEl } = getThreadContext(article);
     state.selectedTweet = t;
     state.selectedContext = context;
+    state.originalPostEl = anchorEl || null;
 
     ui.selectedWrap.style.display = "block";
     renderTweetCard(t);
     renderContext(context, isReply, fromCache);
 
-    // Badge : réponse à un post, ou post original
+    // Badge : réponse à un post (cliquable → scroll vers le post initial), ou post original
     if (isReply) {
-      ui.tweetRelation.textContent = fromCache ? "🧵 Réponse · post en cache" : "🧵 Réponse à un post";
-      ui.tweetRelation.className = "pill " + (fromCache ? "cached" : "reply");
+      const canScroll = !!state.originalPostEl;
+      ui.tweetRelation.textContent = (fromCache ? "🧵 Réponse · post en cache" : "🧵 Réponse à un post") + (canScroll ? " ↗" : "");
+      ui.tweetRelation.className = "pill clickable " + (fromCache ? "cached" : "reply");
+      ui.tweetRelation.title = canScroll ? "Aller au post initial" : "";
+      ui.tweetRelation.onclick = () => scrollToOriginalPost();
     } else {
       ui.tweetRelation.textContent = "📝 Post original";
       ui.tweetRelation.className = "pill original";
+      ui.tweetRelation.title = "";
+      ui.tweetRelation.onclick = null;
     }
 
     ui.variants.innerHTML = "";
@@ -915,6 +921,19 @@
     article.style.outline = "3px solid #00ba7c";
     article.style.outlineOffset = "-3px";
     setTimeout(() => { article.style.outline = ""; }, 800);
+  }
+
+  function scrollToOriginalPost() {
+    const el = state.originalPostEl;
+    if (!el || !document.contains(el)) {
+      setStatus("Post initial hors écran (restitué depuis le cache, impossible d'y aller).", "info");
+      return;
+    }
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.style.outline = "3px solid #1d9bf0";
+    el.style.outlineOffset = "-3px";
+    el.style.transition = "outline .2s";
+    setTimeout(() => { el.style.outline = ""; }, 1400);
   }
 
   // ───────────────────────────────────────────────────────────────────────────

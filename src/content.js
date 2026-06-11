@@ -611,7 +611,8 @@
     ui.language.value = state.config.language || "";
     ui.length.value = state.config.length || "moyen";
     ui.count.value = String(state.config.count || 3);
-    ui.instructions.value = state.config.instructions || "";
+    ui.instructions.value = (activePersona() && activePersona().instructions) || "";
+    renderPersonaSelect();
     updateGenerateLabel();
     setTimeout(() => autoGrow(ui.instructions), 0);
 
@@ -643,12 +644,19 @@
       state.config.language = ui.language.value.trim();
       state.config.length = ui.length.value;
       state.config.count = parseInt(ui.count.value, 10) || 3;
-      state.config.instructions = ui.instructions.value.trim();
+      commitActivePersona();
       saveConfig();
       updateGenerateLabel();
+      ui.cfgStatus.className = "status ok";
       ui.cfgStatus.textContent = "Configuration enregistrée ✓";
       setTimeout(() => (ui.cfgStatus.textContent = ""), 2500);
     });
+
+    // Personas
+    ui.personaSelect.addEventListener("change", () => switchPersona(ui.personaSelect.value));
+    ui.personaNew.addEventListener("click", () => personaCreate());
+    ui.personaRename.addEventListener("click", () => personaRename());
+    ui.personaDelete.addEventListener("click", () => personaDelete());
 
     // Vol de style + onboarding
     if (state.selectedTweet === null) ui.stealHandle.value = currentProfileHandle();
@@ -663,6 +671,76 @@
     const seg = location.pathname.replace(/^\//, "").split("/")[0].toLowerCase();
     const reserved = new Set(["home", "explore", "notifications", "messages", "search", "i", "settings", "compose", ""]);
     return reserved.has(seg) ? "" : "@" + seg;
+  }
+
+  // ── Personas multiples ───────────────────────────────────────────────────
+  function renderPersonaSelect() {
+    if (!ui.personaSelect) return;
+    ui.personaSelect.innerHTML = state.config.personas
+      .map((p) => `<option value="${p.id}">${escapeHtml(p.name)}</option>`)
+      .join("");
+    ui.personaSelect.value = state.config.activePersonaId;
+    ui.personaDelete.disabled = state.config.personas.length <= 1;
+  }
+
+  // Écrit le contenu du textarea dans la persona active + le miroir state.config.instructions
+  function commitActivePersona() {
+    const text = (ui.instructions.value || "").trim();
+    const ap = activePersona();
+    if (ap) ap.instructions = text;
+    state.config.instructions = text;
+  }
+
+  function switchPersona(id) {
+    commitActivePersona(); // sauve les éventuelles modifs en cours
+    state.config.activePersonaId = id;
+    const ap = activePersona();
+    ui.instructions.value = (ap && ap.instructions) || "";
+    state.config.instructions = ui.instructions.value;
+    autoGrow(ui.instructions);
+    saveConfig();
+    renderPersonaSelect();
+    ui.cfgStatus.className = "status ok";
+    ui.cfgStatus.textContent = `Persona « ${ap.name} » active`;
+    setTimeout(() => (ui.cfgStatus.textContent = ""), 2000);
+  }
+
+  function personaCreate() {
+    const name = (window.prompt("Nom de la nouvelle persona :", "Nouvelle persona") || "").trim();
+    if (!name) return;
+    commitActivePersona();
+    const p = { id: newPersonaId(), name, instructions: "" };
+    state.config.personas.push(p);
+    state.config.activePersonaId = p.id;
+    ui.instructions.value = "";
+    state.config.instructions = "";
+    autoGrow(ui.instructions);
+    saveConfig();
+    renderPersonaSelect();
+    ui.instructions.focus();
+  }
+
+  function personaRename() {
+    const ap = activePersona();
+    const name = (window.prompt("Renommer la persona :", ap.name) || "").trim();
+    if (!name) return;
+    ap.name = name;
+    saveConfig();
+    renderPersonaSelect();
+  }
+
+  function personaDelete() {
+    if (state.config.personas.length <= 1) return;
+    const ap = activePersona();
+    if (!window.confirm(`Supprimer la persona « ${ap.name} » ?`)) return;
+    state.config.personas = state.config.personas.filter((p) => p.id !== ap.id);
+    state.config.activePersonaId = state.config.personas[0].id;
+    const next = activePersona();
+    ui.instructions.value = next.instructions || "";
+    state.config.instructions = ui.instructions.value;
+    autoGrow(ui.instructions);
+    saveConfig();
+    renderPersonaSelect();
   }
 
   // ── Onboarding (assistant de style) ──────────────────────────────────────

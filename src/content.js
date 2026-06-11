@@ -12,6 +12,8 @@
       length: "moyen",
       count: 3,
       instructions: "",
+      personas: [],
+      activePersonaId: "",
       onboarded: false
     },
     selecting: false,
@@ -49,9 +51,29 @@
     return new Promise((resolve) => {
       chrome.storage.local.get("replyerConfig", (data) => {
         if (data && data.replyerConfig) Object.assign(state.config, data.replyerConfig);
+        migratePersonas();
         resolve();
       });
     });
+  }
+
+  // Modèle de personas multiples. `instructions` reste le miroir de la persona active.
+  function migratePersonas() {
+    if (!Array.isArray(state.config.personas) || !state.config.personas.length) {
+      state.config.personas = [{ id: "p_default", name: "Mon style", instructions: state.config.instructions || "" }];
+      state.config.activePersonaId = "p_default";
+    }
+    if (!state.config.activePersonaId || !state.config.personas.some((p) => p.id === state.config.activePersonaId)) {
+      state.config.activePersonaId = state.config.personas[0].id;
+    }
+    const ap = activePersona();
+    state.config.instructions = (ap && ap.instructions) || "";
+  }
+  function activePersona() {
+    return state.config.personas.find((p) => p.id === state.config.activePersonaId) || state.config.personas[0];
+  }
+  function newPersonaId() {
+    return "p_" + Date.now().toString(36) + Math.floor(performance.now()).toString(36);
   }
   function saveConfig() {
     chrome.storage.local.set({ replyerConfig: state.config });
@@ -325,6 +347,11 @@
         .lb-close:hover { background:var(--card-2); }
         .lb-vidnote { font-size:12px; color:var(--muted); text-align:center; margin-top:4px; }
 
+        /* Personas */
+        .persona-row { display:flex; gap:7px; }
+        .persona-row select { flex:1; }
+        .persona-row button.icon { flex:none; width:38px; padding:0; font-size:15px; display:flex; align-items:center; justify-content:center; }
+
         /* Vol de style */
         .steal-row { display:flex; gap:8px; }
         .steal-row input { flex:2; }
@@ -491,6 +518,15 @@
                 </select>
               </div>
             </div>
+
+            <label>Persona active</label>
+            <div class="persona-row">
+              <select id="personaSelect"></select>
+              <button class="ghost icon" id="personaNew" title="Nouvelle persona">＋</button>
+              <button class="ghost icon" id="personaRename" title="Renommer">✎</button>
+              <button class="ghost icon" id="personaDelete" title="Supprimer">🗑</button>
+            </div>
+            <p class="hint">Crée plusieurs styles (perso, marque, shitpost…) et bascule en un clic. L'assistant et le vol de style écrivent dans la persona active.</p>
 
             <label>Ton / style (ta personnalité, ta niche)</label>
             <button class="ghost" id="obLaunch" style="margin-bottom:8px;">🎯 Lancer l'assistant de style</button>

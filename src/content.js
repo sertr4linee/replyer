@@ -804,7 +804,15 @@
     `;
   }
 
-  function renderContext(list) {
+  function renderContext(list, isReply, fromCache) {
+    // Réponse, mais parent introuvable (ni DOM ni cache)
+    if (isReply && (!list || !list.length)) {
+      ui.contextCard.style.display = "block";
+      ui.contextCard.innerHTML =
+        `<div class="ctx-label">🧵 Réponse à un post</div>` +
+        `<div class="ctx-empty">Post initial non récupéré (il faut qu'il ait été affiché à l'écran au moins une fois). Ouvre le tweet ou scrolle jusqu'au post d'origine, puis re-sélectionne.</div>`;
+      return;
+    }
     if (!list || !list.length) {
       ui.contextCard.style.display = "none";
       ui.contextCard.innerHTML = "";
@@ -812,7 +820,7 @@
     }
     ui.contextCard.style.display = "block";
     ui.contextCard.innerHTML =
-      `<div class="ctx-label">🧵 Post initial / contexte récupéré (${list.length})</div>` +
+      `<div class="ctx-label">🧵 Post initial / contexte récupéré (${list.length})${fromCache ? " · cache" : ""}</div>` +
       list
         .map(
           (c) =>
@@ -824,19 +832,35 @@
   function selectTweet(article) {
     state.selectedArticle = article;
     const t = extractTweet(article);
-    const ctx = getThreadContext(article);
+    const { context, isReply, fromCache } = getThreadContext(article);
     state.selectedTweet = t;
-    state.selectedContext = ctx;
+    state.selectedContext = context;
 
     ui.selectedWrap.style.display = "block";
     renderTweetCard(t);
-    renderContext(ctx);
+    renderContext(context, isReply, fromCache);
+
+    // Badge : réponse à un post, ou post original
+    if (isReply) {
+      ui.tweetRelation.textContent = fromCache ? "🧵 Réponse · post en cache" : "🧵 Réponse à un post";
+      ui.tweetRelation.className = "pill " + (fromCache ? "cached" : "reply");
+    } else {
+      ui.tweetRelation.textContent = "📝 Post original";
+      ui.tweetRelation.className = "pill original";
+    }
 
     ui.variants.innerHTML = "";
     ui.draftWrap.style.display = "none";
     ui.replyText.value = "";
     updateDraftCounter();
-    setStatus(ctx.length ? `Tweet + ${ctx.length} message(s) de contexte récupérés ✓` : "Tweet sélectionné ✓", "ok");
+    setStatus(
+      isReply
+        ? context.length
+          ? `Réponse détectée — post initial récupéré ✓`
+          : `Réponse détectée — post initial non disponible`
+        : "Post original sélectionné ✓",
+      isReply && !context.length ? "info" : "ok"
+    );
 
     // brève surbrillance de confirmation
     article.style.outline = "3px solid #00ba7c";

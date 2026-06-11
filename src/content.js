@@ -829,7 +829,7 @@
       const v = (ui.obBody.querySelector("#obResult").value || "").trim();
       ui.instructions.value = v;
       autoGrow(ui.instructions);
-      state.config.instructions = v;
+      commitActivePersona();
       state.config.onboarded = true;
       saveConfig();
       ui.onboarding.style.display = "none";
@@ -897,7 +897,7 @@
         const block = `— Style inspiré de @${handle} —\n${resp.style}`;
         ui.instructions.value = cur ? cur + "\n\n" + block : block;
         autoGrow(ui.instructions);
-        state.config.instructions = ui.instructions.value;
+        commitActivePersona();
         saveConfig();
         ui.cfgStatus.className = "status ok";
         ui.cfgStatus.textContent = `Style de @${handle} ajouté à tes instructions ✓`;

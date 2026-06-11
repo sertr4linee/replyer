@@ -16,7 +16,7 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SIDEBAR" }).catch(() => {});
 });
 
-async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count }) {
+async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count, context, metrics }) {
   if (!apiKey) throw new Error("Clé API OpenAI manquante. Renseigne-la dans la sidebar.");
   if (!tweetText) throw new Error("Aucun texte de tweet à traiter.");
   const n = Math.min(Math.max(parseInt(count, 10) || 3, 1), 5);
@@ -81,12 +81,35 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
     .filter((l) => l !== undefined && l !== null)
     .join("\n");
 
+  // Contexte du fil (post initial / messages parents) pour des réponses plus pertinentes
+  let ctxBlock = "";
+  if (Array.isArray(context) && context.length) {
+    ctxBlock =
+      "CONTEXTE DE LA CONVERSATION (du plus ancien au plus récent — NE réponds PAS à ces messages, ils servent uniquement à comprendre le fil) :\n" +
+      context
+        .map((c, i) => `  [${i + 1}] ${c.author ? c.author + " : " : ""}"""${(c.text || "").trim()}"""`)
+        .join("\n") +
+      "\n";
+  }
+
+  const m = metrics || {};
+  const metricsBits = [];
+  if (m.views != null) metricsBits.push(`${m.views} vues`);
+  if (m.likes != null) metricsBits.push(`${m.likes} likes`);
+  if (m.replies != null) metricsBits.push(`${m.replies} réponses`);
+  const metricsLine = metricsBits.length ? `Portée du tweet : ${metricsBits.join(", ")} (un tweet à forte portée = plus d'yeux sur ta réponse, soigne-la).` : "";
+
   const user = [
-    "Voici le tweet auquel tu dois répondre pour maximiser l'engagement et la croissance d'audience.",
-    author ? `Auteur : ${author}` : "",
-    "Contenu du tweet :",
+    "Tu dois écrire la meilleure réponse possible pour maximiser l'engagement et la croissance d'audience.",
+    ctxBlock,
+    author ? `Auteur du tweet à commenter : ${author}` : "",
+    metricsLine,
+    "LE TWEET AUQUEL TU RÉPONDS (c'est à CELUI-CI que ta réponse s'adresse) :",
     `"""${tweetText}"""`,
     "",
+    ctxBlock
+      ? "Sers-toi du contexte ci-dessus pour que ta réponse tombe juste, mais adresse-toi bien au dernier tweet."
+      : "",
     `Analyse les angles les plus percutants, puis écris ${n} réponses distinctes. Réponds uniquement avec l'objet JSON demandé.`
   ]
     .filter(Boolean)

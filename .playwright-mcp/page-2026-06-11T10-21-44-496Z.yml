@@ -1,0 +1,148 @@
+- generic [ref=e2]:
+  - generic:
+    - generic:
+      - heading "To view keyboard shortcuts, press question mark View keyboard shortcuts" [level=2] [ref=e3]:
+        - generic [ref=e4]: To view keyboard shortcuts, press question mark
+        - link "View keyboard shortcuts" [ref=e5] [cursor=pointer]:
+          - /url: /i/keyboard_shortcuts
+      - generic:
+        - generic:
+          - button "Grok" [ref=e6] [cursor=pointer]:
+            - img [ref=e7]
+          - button "Chat" [ref=e10] [cursor=pointer]:
+            - img [ref=e11]
+      - generic [ref=e14]:
+        - button "Skip to home timeline" [ref=e15] [cursor=pointer]
+        - button "Skip to trending" [ref=e17] [cursor=pointer]
+        - banner [ref=e19]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - heading "X" [level=1] [ref=e24] [cursor=pointer]:
+                - link "X" [ref=e25]:
+                  - /url: /home
+                  - img [ref=e27]
+              - navigation "Primary" [ref=e31]:
+                - link "Home" [ref=e32] [cursor=pointer]:
+                  - /url: /home
+                  - generic [ref=e33]:
+                    - img [ref=e35]
+                    - generic [ref=e38]: Home
+                - link "Search and explore" [ref=e39] [cursor=pointer]:
+                  - /url: /explore
+                  - generic [ref=e40]:
+                    - img [ref=e42]
+                    - generic [ref=e45]: Explore
+                - link "Notifications" [ref=e46] [cursor=pointer]:
+                  - /url: /notifications
+                  - generic [ref=e47]:
+                    - img [ref=e49]
+                    - generic [ref=e52]: Notifications
+                - link "Follow" [ref=e53] [cursor=pointer]:
+                  - /url: /i/connect_people
+                  - generic [ref=e54]:
+                    - img [ref=e56]
+                    - generic [ref=e59]: Follow
+                - link "Direct Messages" [ref=e60] [cursor=pointer]:
+                  - /url: /i/chat
+                  - generic [ref=e61]:
+                    - img [ref=e63]
+                    - generic [ref=e66]: Chat
+                - link "Grok" [ref=e67] [cursor=pointer]:
+                  - /url: /i/grok
+                  - generic [ref=e68]:
+                    - img [ref=e70]
+                    - generic [ref=e73]: Grok
+                - link "Premium" [ref=e74] [cursor=pointer]:
+                  - /url: /i/premium
+                  - generic [ref=e75]:
+                    - img [ref=e77]
+                    - generic [ref=e80]: Premium
+                - link "Bookmarks" [ref=e81] [cursor=pointer]:
+                  - /url: /i/bookmarks
+                  - generic [ref=e82]:
+                    - img [ref=e84]
+                    - generic [ref=e87]: Bookmarks
+                - link "Articles" [ref=e88] [cursor=pointer]:
+                  - /url: /compose/articles
+                  - generic [ref=e89]:
+                    - img [ref=e91]
+                    - generic [ref=e96]: Articles
+                - link "Profile" [ref=e97] [cursor=pointer]:
+                  - /url: /menzobuilds
+                  - generic [ref=e98]:
+                    - img [ref=e100]
+                    - generic [ref=e103]: Profile
+                - button "More menu items" [ref=e104] [cursor=pointer]:
+                  - generic [ref=e105]:
+                    - img [ref=e107]
+                    - generic [ref=e110]: More
+              - link "Post" [ref=e112] [cursor=pointer]:
+                - /url: /compose/post
+                - generic [ref=e118]: Post
+            - button "Account menu" [ref=e121] [cursor=pointer]:
+              - generic [ref=e129]:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic "menzo":
+                        - img "menzo"
+              - generic [ref=e133]:
+                - generic [ref=e135]:
+                  - generic [ref=e137]: menzo
+                  - img "Verified account" [ref=e140]
+                - generic [ref=e146]: "@menzobuilds"
+              - img [ref=e148]
+        - main [ref=e151]:
+          - generic "Home timeline" [ref=e156]:
+            - generic [ref=e157]:
+              - generic [ref=e160]:
+                - navigation [ref=e162]:
+                  - generic [ref=e163]:
+                    - generic:
+                      - button "Previous" [disabled]:
+                        - generic:
+                          - img
+                    - tablist [ref=e165]:
+                      - tab "For you" [selected] [ref=e166] [cursor=pointer]:
+                        - generic [ref=e168]:
+                          - text: For you
+                          - img [ref=e169]
+                      - tab "Following" [ref=e173] [cursor=pointer]:
+                        - generic [ref=e176]: Following
+                    - generic:
+                      - button "Next" [disabled]:
+                        - generic:
+                          - img
+                - button "Manage timelines" [ref=e178] [cursor=pointer]:
+                  - img [ref=e180]
+              - generic:
+                - generic:
+                  - status:
+                    - button:
+                      - generic:
+                        - img
+                        - generic: See new posts
+            - generic [ref=e195]:
+              - generic [ref=e196]: What’s happening?
+              - generic [ref=e197]:
+                - generic [ref=e198]:
+                  - button [disabled] [ref=e199]:
+                    - img [ref=e201]
+                  - button [disabled] [ref=e205]:
+                    - img [ref=e207]
+                  - button [disabled] [ref=e211]:
+                    - img [ref=e213]
+                  - button [disabled] [ref=e216]:
+                    - img [ref=e218]
+                  - button [disabled] [ref=e221]:
+                    - img [ref=e223]
+                  - button [disabled] [ref=e227]:
+                    - img [ref=e229]
+                  - button [disabled] [ref=e232]:
+                    - img [ref=e234]
+                  - button [disabled] [ref=e237]:
+                    - img [ref=e239]
+                - button "Post" [disabled] [ref=e243]:
+                  - generic [ref=e246]: Post
+            - progressbar "Loading timeline" [ref=e250]:
+              - img [ref=e252]

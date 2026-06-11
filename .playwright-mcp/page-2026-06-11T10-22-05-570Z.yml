@@ -1,0 +1,232 @@
+- generic [ref=e2]:
+  - generic:
+    - generic:
+      - heading "To view keyboard shortcuts, press question mark View keyboard shortcuts" [level=2] [ref=e3]:
+        - generic [ref=e4]: To view keyboard shortcuts, press question mark
+        - link "View keyboard shortcuts" [ref=e5] [cursor=pointer]:
+          - /url: /i/keyboard_shortcuts
+      - generic:
+        - generic:
+          - button "Grok" [ref=e6] [cursor=pointer]:
+            - img [ref=e7]
+          - button "Chat" [ref=e10] [cursor=pointer]:
+            - img [ref=e11]
+      - generic [ref=e14]:
+        - button "Skip to home timeline" [ref=e15] [cursor=pointer]
+        - button "Skip to trending" [ref=e17] [cursor=pointer]
+        - banner [ref=e19]:
+          - generic [ref=e21]:
+            - generic [ref=e22]:
+              - heading "X" [level=1] [ref=e24] [cursor=pointer]:
+                - link "X" [ref=e25]:
+                  - /url: /home
+                  - img [ref=e27]
+              - navigation "Primary" [ref=e31]:
+                - link "Home" [ref=e32] [cursor=pointer]:
+                  - /url: /home
+                  - generic [ref=e33]:
+                    - img [ref=e35]
+                    - generic [ref=e38]: Home
+                - link "Search and explore" [ref=e39] [cursor=pointer]:
+                  - /url: /explore
+                  - generic [ref=e40]:
+                    - img [ref=e42]
+                    - generic [ref=e45]: Explore
+                - link "Notifications" [ref=e46] [cursor=pointer]:
+                  - /url: /notifications
+                  - generic [ref=e47]:
+                    - img [ref=e49]
+                    - generic [ref=e52]: Notifications
+                - link "Follow" [ref=e53] [cursor=pointer]:
+                  - /url: /i/connect_people
+                  - generic [ref=e54]:
+                    - img [ref=e56]
+                    - generic [ref=e59]: Follow
+                - link "Direct Messages" [ref=e60] [cursor=pointer]:
+                  - /url: /i/chat
+                  - generic [ref=e61]:
+                    - img [ref=e63]
+                    - generic [ref=e66]: Chat
+                - link "Grok" [ref=e67] [cursor=pointer]:
+                  - /url: /i/grok
+                  - generic [ref=e68]:
+                    - img [ref=e70]
+                    - generic [ref=e73]: Grok
+                - link "Premium" [ref=e74] [cursor=pointer]:
+                  - /url: /i/premium
+                  - generic [ref=e75]:
+                    - img [ref=e77]
+                    - generic [ref=e80]: Premium
+                - link "Bookmarks" [ref=e81] [cursor=pointer]:
+                  - /url: /i/bookmarks
+                  - generic [ref=e82]:
+                    - img [ref=e84]
+                    - generic [ref=e87]: Bookmarks
+                - link "Articles" [ref=e88] [cursor=pointer]:
+                  - /url: /compose/articles
+                  - generic [ref=e89]:
+                    - img [ref=e91]
+                    - generic [ref=e96]: Articles
+                - link "Profile" [ref=e97] [cursor=pointer]:
+                  - /url: /menzobuilds
+                  - generic [ref=e98]:
+                    - img [ref=e100]
+                    - generic [ref=e103]: Profile
+                - button "More menu items" [ref=e104] [cursor=pointer]:
+                  - generic [ref=e105]:
+                    - img [ref=e107]
+                    - generic [ref=e110]: More
+              - link "Post" [ref=e112] [cursor=pointer]:
+                - /url: /compose/post
+                - generic [ref=e118]: Post
+            - button "Account menu" [ref=e121] [cursor=pointer]:
+              - generic [ref=e129]:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic "menzo":
+                        - img "menzo"
+              - generic [ref=e133]:
+                - generic [ref=e135]:
+                  - generic [ref=e137]: menzo
+                  - img "Verified account" [ref=e140]
+                - generic [ref=e146]: "@menzobuilds"
+              - img [ref=e148]
+        - main [ref=e151]:
+          - generic [ref=e154]:
+            - generic "Home timeline" [ref=e156]:
+              - generic [ref=e157]:
+                - generic [ref=e163] [cursor=pointer]:
+                  - button "Back" [ref=e165]:
+                    - img [ref=e167]
+                  - generic [ref=e171]:
+                    - heading "Thariq Verified account" [level=2] [ref=e172]:
+                      - generic [ref=e176]:
+                        - generic [ref=e178]: Thariq
+                        - img "Verified account" [ref=e181]
+                    - generic [ref=e184]: 5,599 posts
+                  - generic [ref=e186]:
+                    - button "Profile Summary" [ref=e187]:
+                      - img [ref=e189]
+                    - button "Search" [ref=e192]:
+                      - img [ref=e194]
+                - generic:
+                  - generic:
+                    - status:
+                      - button:
+                        - generic:
+                          - img
+                          - generic: See new posts
+              - generic [ref=e199]:
+                - generic [ref=e200]:
+                  - link [ref=e201] [cursor=pointer]:
+                    - /url: /trq212/header_photo
+                  - generic [ref=e205]:
+                    - generic [ref=e206]:
+                      - link [ref=e214] [cursor=pointer]:
+                        - /url: /trq212/photo
+                      - generic [ref=e217]:
+                        - button "More" [ref=e218] [cursor=pointer]:
+                          - img [ref=e220]
+                        - button "Message" [ref=e223] [cursor=pointer]:
+                          - img [ref=e225]
+                        - button "Follow @trq212" [ref=e230] [cursor=pointer]:
+                          - generic [ref=e233]: Follow
+                    - generic [ref=e237]:
+                      - generic [ref=e241]:
+                        - text: Thariq
+                        - button "Provides details about verified accounts." [ref=e246] [cursor=pointer]:
+                          - img "Verified account" [ref=e247]
+                      - generic [ref=e253]: "@trq212"
+                    - generic [ref=e256]:
+                      - text: Claude Code
+                      - link "@anthropicai" [ref=e259] [cursor=pointer]:
+                        - /url: /anthropicai
+                      - text: . prev YC W20,
+                      - link "@southpkcommons" [ref=e262] [cursor=pointer]:
+                        - /url: /southpkcommons
+                      - text: ","
+                      - link "@medialab" [ref=e265] [cursor=pointer]:
+                        - /url: /medialab
+                    - generic [ref=e267]:
+                      - img [ref=e268]
+                      - generic [ref=e271]: SF via Toronto
+                      - link "thariq.io" [ref=e272] [cursor=pointer]:
+                        - /url: https://t.co/t9t864dmsg
+                        - img [ref=e273]
+                        - text: thariq.io
+                      - link "Joined August 2011" [ref=e277] [cursor=pointer]:
+                        - /url: /trq212/about
+                        - img [ref=e278]
+                        - text: Joined August 2011
+                        - img [ref=e281]
+                    - generic [ref=e284]:
+                      - link "1,870 Following" [ref=e286] [cursor=pointer]:
+                        - /url: /trq212/following
+                        - generic [ref=e287]: 1,870
+                        - generic [ref=e288]: Following
+                      - link "278.2K Followers" [ref=e290] [cursor=pointer]:
+                        - /url: /trq212/verified_followers
+                        - generic [ref=e291]: 278.2K
+                        - generic [ref=e292]: Followers
+                  - progressbar [ref=e296]:
+                    - img [ref=e298]
+                - navigation "Profile timelines" [ref=e302]:
+                  - generic [ref=e303]:
+                    - generic:
+                      - button "Previous" [disabled]:
+                        - generic:
+                          - img
+                    - tablist [ref=e305]:
+                      - tab "Posts" [ref=e306] [cursor=pointer]:
+                        - generic [ref=e309]: Posts
+                      - tab "Replies" [selected] [ref=e310] [cursor=pointer]:
+                        - generic [ref=e313]: Replies
+                      - tab "Highlights" [ref=e315] [cursor=pointer]:
+                        - generic [ref=e318]: Highlights
+                      - tab "Articles" [ref=e319] [cursor=pointer]:
+                        - generic [ref=e322]: Articles
+                      - tab "Media" [ref=e323] [cursor=pointer]:
+                        - generic [ref=e326]: Media
+                    - generic:
+                      - button "Next" [disabled]:
+                        - generic:
+                          - img
+                - progressbar "Loading posts by @trq212" [ref=e328]:
+                  - img [ref=e330]
+            - generic "Trending" [ref=e337]:
+              - generic [ref=e338]:
+                - search "Search" [ref=e343]:
+                  - generic [ref=e348]:
+                    - img [ref=e350]
+                    - combobox "Search query" [ref=e355]
+                - progressbar "Loading recommendations for users to follow" [ref=e360]:
+                  - img [ref=e362]
+                - progressbar "Loading timeline" [ref=e367]:
+                  - img [ref=e369]
+                - navigation "Footer" [ref=e373]:
+                  - generic [ref=e374]:
+                    - link "Terms of Service" [ref=e375] [cursor=pointer]:
+                      - /url: https://x.com/tos
+                    - generic [ref=e376]: "|"
+                  - generic [ref=e377]:
+                    - link "Privacy Policy" [ref=e378] [cursor=pointer]:
+                      - /url: https://x.com/privacy
+                    - generic [ref=e379]: "|"
+                  - generic [ref=e380]:
+                    - link "Cookie Policy" [ref=e381] [cursor=pointer]:
+                      - /url: https://support.x.com/articles/20170514
+                    - generic [ref=e382]: "|"
+                  - generic [ref=e383]:
+                    - link "Accessibility" [ref=e384] [cursor=pointer]:
+                      - /url: https://help.x.com/resources/accessibility
+                    - generic [ref=e385]: "|"
+                  - generic [ref=e386]:
+                    - link "Ads info" [ref=e387] [cursor=pointer]:
+                      - /url: https://business.x.com/en/help/troubleshooting/how-twitter-ads-work.html?ref=web-twc-ao-gbl-adsinfo&utm_source=twc&utm_medium=web&utm_campaign=ao&utm_content=adsinfo
+                    - generic [ref=e388]: "|"
+                  - button "More" [ref=e389] [cursor=pointer]:
+                    - generic [ref=e390]:
+                      - text: More
+                      - img [ref=e391]
+                  - generic [ref=e394]: © 2026 X Corp.

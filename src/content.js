@@ -744,6 +744,13 @@
     ui.draftCounter.classList.toggle("over", len > 280);
   }
 
+  // Auto-redimensionne un textarea à son contenu (jusqu'à un max géré en CSS via max-height)
+  function autoGrow(el) {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight + 2, 320) + "px";
+  }
+
   function renderVariants(list) {
     ui.variants.innerHTML = "";
     list.forEach((text, i) => {
@@ -1182,7 +1189,9 @@
     ui.variants.innerHTML = "";
     ui.draftWrap.style.display = "none";
     ui.replyText.value = "";
+    autoGrow(ui.replyText);
     updateDraftCounter();
+    if (ui.generateBtn) ui.generateBtn.disabled = false; // toujours réactiver pour un nouveau post
     setStatus(
       isReply
         ? context.length

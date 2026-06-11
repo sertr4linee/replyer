@@ -523,6 +523,7 @@
     ui.count.value = String(state.config.count || 3);
     ui.instructions.value = state.config.instructions || "";
     updateGenerateLabel();
+    setTimeout(() => autoGrow(ui.instructions), 0);
 
     // Tabs
     shadowRoot.querySelectorAll(".tab").forEach((tab) => {
@@ -538,7 +539,8 @@
     ui.close.addEventListener("click", () => toggleSidebar(false));
     ui.selectBtn.addEventListener("click", () => startSelection());
     ui.generateBtn.addEventListener("click", () => doGenerate());
-    ui.replyText.addEventListener("input", () => updateDraftCounter());
+    ui.replyText.addEventListener("input", () => { updateDraftCounter(); autoGrow(ui.replyText); });
+    ui.instructions.addEventListener("input", () => autoGrow(ui.instructions));
     ui.copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(ui.replyText.value || "").then(() => setStatus("Copié ✓", "ok"));
     });
@@ -656,6 +658,7 @@
     ui.obNext.onclick = () => {
       const v = (ui.obBody.querySelector("#obResult").value || "").trim();
       ui.instructions.value = v;
+      autoGrow(ui.instructions);
       state.config.instructions = v;
       state.config.onboarded = true;
       saveConfig();
@@ -723,6 +726,7 @@
         const cur = ui.instructions.value.trim();
         const block = `— Style inspiré de @${handle} —\n${resp.style}`;
         ui.instructions.value = cur ? cur + "\n\n" + block : block;
+        autoGrow(ui.instructions);
         state.config.instructions = ui.instructions.value;
         saveConfig();
         ui.cfgStatus.className = "status ok";
@@ -773,6 +777,7 @@
         ui.draftWrap.style.display = "block";
         ui.replyText.value = text;
         updateDraftCounter();
+        autoGrow(ui.replyText);
         ui.replyText.focus();
         ui.draftWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
         setStatus("Variante chargée dans le brouillon. Édite puis insère.", "info");

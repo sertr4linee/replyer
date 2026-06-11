@@ -11,7 +11,8 @@
       language: "",
       length: "moyen",
       count: 3,
-      instructions: ""
+      instructions: "",
+      onboarded: false
     },
     selecting: false,
     hoverEl: null,
@@ -28,6 +29,18 @@
   // Cache des fils : id du tweet -> { context: [posts parents], isReply: bool } ; et id -> basic
   const threadCache = new Map(); // replyId -> [parents basics]
   const tweetCache = new Map(); // id -> basic info
+
+  // Onboarding (assistant de style)
+  let obState = { step: 0, answers: {} };
+  const OB_STEPS = [
+    { key: "niche", title: "Ta niche", q: "Quels sujets / thèmes traites-tu principalement ?", type: "textarea", ph: "Ex : IA, SaaS, build in public, crypto, productivité…" },
+    { key: "audience", title: "Ton audience", q: "À qui t'adresses-tu ?", type: "text", ph: "Ex : fondateurs, devs, marketeurs, débutants…" },
+    { key: "tone", title: "Ton ton", q: "Quelle personnalité veux-tu dégager ?", type: "text", ph: "Choisis ou écris…", chips: ["Direct", "Provoc", "Expert", "Drôle", "Inspirant", "Cash", "Bienveillant", "Contrarian"] },
+    { key: "language", title: "Ta langue", q: "Langue principale de tes réponses ?", type: "text", ph: "Choisis…", chips: ["Français", "English", "Auto (langue du tweet)"] },
+    { key: "emojis", title: "Les emojis", q: "Quel usage des emojis ?", type: "text", ph: "Choisis…", chips: ["Jamais", "1 max", "Parfois"] },
+    { key: "goal", title: "Ton objectif", q: "Ton but sur X ?", type: "text", ph: "Choisis ou écris…", chips: ["Gagner des abonnés", "Vendre mon produit", "Networker", "Autorité / expertise"] },
+    { key: "examples", title: "Tes inspirations", q: "Des comptes qui t'inspirent, des punchlines, ou ta bio ?", type: "textarea", ph: "Colle ta bio ou des exemples de ton style…" }
+  ];
 
   // ───────────────────────────────────────────────────────────────────────────
   // Config (chrome.storage.local)
@@ -491,6 +504,16 @@
     ui.instructions = shadowRoot.getElementById("instructions");
     ui.saveBtn = shadowRoot.getElementById("saveBtn");
     ui.cfgStatus = shadowRoot.getElementById("cfgStatus");
+    ui.obLaunch = shadowRoot.getElementById("obLaunch");
+    ui.stealHandle = shadowRoot.getElementById("stealHandle");
+    ui.stealBtn = shadowRoot.getElementById("stealBtn");
+    // onboarding
+    ui.onboarding = shadowRoot.getElementById("onboarding");
+    ui.obClose = shadowRoot.getElementById("obClose");
+    ui.obBar = shadowRoot.getElementById("obBar");
+    ui.obBody = shadowRoot.getElementById("obBody");
+    ui.obBack = shadowRoot.getElementById("obBack");
+    ui.obNext = shadowRoot.getElementById("obNext");
 
     // Remplir la config
     ui.apiKey.value = state.config.apiKey || "";
@@ -532,6 +555,180 @@
       ui.cfgStatus.textContent = "Configuration enregistrée ✓";
       setTimeout(() => (ui.cfgStatus.textContent = ""), 2500);
     });
+
+    // Vol de style + onboarding
+    if (state.selectedTweet === null) ui.stealHandle.value = currentProfileHandle();
+    ui.stealBtn.addEventListener("click", () => stealStyle());
+    ui.obLaunch.addEventListener("click", () => openOnboarding());
+    ui.obClose.addEventListener("click", () => (ui.onboarding.style.display = "none"));
+    ui.obBack.onclick = () => obStep(-1);
+    ui.obNext.onclick = () => obStep(1);
+  }
+
+  function currentProfileHandle() {
+    const seg = location.pathname.replace(/^\//, "").split("/")[0].toLowerCase();
+    const reserved = new Set(["home", "explore", "notifications", "messages", "search", "i", "settings", "compose", ""]);
+    return reserved.has(seg) ? "" : "@" + seg;
+  }
+
+  // ── Onboarding (assistant de style) ──────────────────────────────────────
+  function openOnboarding() {
+    obState = { step: 0, answers: Object.assign({}, obState.answers) };
+    ui.onboarding.style.display = "flex";
+    ui.obBack.disabled = ui.obNext.disabled = false;
+    ui.obNext.onclick = () => obStep(1);
+    renderObStep();
+  }
+
+  function renderObStep() {
+    const s = OB_STEPS[obState.step];
+    ui.obBar.style.width = Math.round((obState.step / OB_STEPS.length) * 100) + "%";
+    ui.obBack.style.visibility = obState.step === 0 ? "hidden" : "visible";
+    ui.obNext.textContent = obState.step === OB_STEPS.length - 1 ? "✨ Générer mon style" : "Suivant →";
+    ui.obNext.onclick = () => obStep(1);
+    const val = obState.answers[s.key] || "";
+    const field = s.type === "textarea"
+      ? `<textarea id="obInput" placeholder="${escapeHtml(s.ph || "")}">${escapeHtml(val)}</textarea>`
+      : `<input id="obInput" type="text" placeholder="${escapeHtml(s.ph || "")}" value="${escapeHtml(val)}">`;
+    const chips = s.chips ? `<div class="ob-chips">${s.chips.map((c) => `<span class="ob-chip">${escapeHtml(c)}</span>`).join("")}</div>` : "";
+    ui.obBody.innerHTML = `
+      <div class="ob-step-n">Étape ${obState.step + 1} / ${OB_STEPS.length}</div>
+      <div class="ob-q">${escapeHtml(s.title)}</div>
+      <div class="ob-sub">${escapeHtml(s.q)}</div>
+      ${field}
+      ${chips}
+    `;
+    const input = ui.obBody.querySelector("#obInput");
+    if (input) input.focus();
+    ui.obBody.querySelectorAll(".ob-chip").forEach((ch) => {
+      ch.addEventListener("click", () => {
+        if (s.type === "textarea") {
+          const cur = input.value.trim();
+          input.value = cur ? cur.replace(/,\s*$/, "") + ", " + ch.textContent : ch.textContent;
+        } else {
+          input.value = ch.textContent;
+        }
+        input.focus();
+      });
+    });
+  }
+
+  function obStep(dir) {
+    const s = OB_STEPS[obState.step];
+    const input = ui.obBody.querySelector("#obInput");
+    if (input) obState.answers[s.key] = input.value.trim();
+    if (dir < 0) {
+      if (obState.step > 0) { obState.step--; renderObStep(); }
+      return;
+    }
+    if (obState.step < OB_STEPS.length - 1) { obState.step++; renderObStep(); return; }
+    generateStyleFromOnboarding();
+  }
+
+  function generateStyleFromOnboarding() {
+    if (!state.config.apiKey) {
+      ui.obBody.innerHTML = `<div class="ob-q">Clé API manquante</div><div class="ob-sub" style="color:#f4212e">Ajoute ta clé OpenAI dans l'onglet Configuration, puis relance l'assistant.</div>`;
+      return;
+    }
+    ui.obBar.style.width = "100%";
+    ui.obBack.disabled = ui.obNext.disabled = true;
+    ui.obBody.innerHTML = `<div class="ob-q">✨ Création de ton style…</div><div class="skel" style="margin-top:12px"><div class="skel-line w90"></div><div class="skel-line w70"></div><div class="skel-line w50"></div></div>`;
+    chrome.runtime.sendMessage(
+      { type: "BUILD_STYLE", payload: { apiKey: state.config.apiKey, model: state.config.model, mode: "onboarding", answers: obState.answers } },
+      (resp) => {
+        ui.obBack.disabled = ui.obNext.disabled = false;
+        if (chrome.runtime.lastError) { ui.obBody.innerHTML = `<div class="ob-sub" style="color:#f4212e">Erreur : ${escapeHtml(chrome.runtime.lastError.message)}</div>`; return; }
+        if (!resp || !resp.ok) { ui.obBody.innerHTML = `<div class="ob-sub" style="color:#f4212e">Erreur : ${escapeHtml((resp && resp.error) || "inconnue")}</div>`; return; }
+        renderObResult(resp.style);
+      }
+    );
+  }
+
+  function renderObResult(style) {
+    ui.obBody.innerHTML = `
+      <div class="ob-step-n">✅ Ton style est prêt</div>
+      <div class="ob-q">Ton persona</div>
+      <div class="ob-sub">Relis et ajuste si besoin, puis applique-le.</div>
+      <textarea id="obResult" class="ob-result">${escapeHtml(style)}</textarea>
+    `;
+    ui.obBack.style.visibility = "visible";
+    ui.obNext.textContent = "✅ Utiliser ce style";
+    ui.obNext.onclick = () => {
+      const v = (ui.obBody.querySelector("#obResult").value || "").trim();
+      ui.instructions.value = v;
+      state.config.instructions = v;
+      state.config.onboarded = true;
+      saveConfig();
+      ui.onboarding.style.display = "none";
+      ui.cfgStatus.className = "status ok";
+      ui.cfgStatus.textContent = "Style appliqué à tes instructions ✓";
+      setTimeout(() => (ui.cfgStatus.textContent = ""), 3000);
+    };
+  }
+
+  // ── Vol de style d'un compte ─────────────────────────────────────────────
+  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+  async function scrapeUserTweets(handle, maxScrolls) {
+    const map = new Map();
+    const collect = () => {
+      document.querySelectorAll('article[data-testid="tweet"]').forEach((a) => {
+        const h = (tweetHandle(a) || "").replace("@", "").toLowerCase();
+        if (h !== handle) return;
+        const t = a.querySelector('[data-testid="tweetText"]');
+        if (!t) return;
+        const txt = t.innerText.trim();
+        if (txt.length < 15) return;
+        map.set(permalinkId(a) || txt, txt);
+      });
+    };
+    collect();
+    const onProfile = location.pathname.replace(/^\//, "").split("/")[0].toLowerCase() === handle;
+    if (onProfile) {
+      const prevY = window.scrollY;
+      for (let i = 0; i < (maxScrolls || 10) && map.size < 30; i++) {
+        window.scrollBy(0, window.innerHeight * 1.6);
+        await sleep(650);
+        collect();
+      }
+      window.scrollTo(0, prevY);
+    }
+    return [...map.values()];
+  }
+
+  async function stealStyle() {
+    const handle = ui.stealHandle.value.trim().replace(/^@/, "").toLowerCase();
+    if (!handle) { ui.cfgStatus.className = "status err"; ui.cfgStatus.textContent = "Entre un @compte à analyser."; return; }
+    if (!state.config.apiKey) { ui.cfgStatus.className = "status err"; ui.cfgStatus.textContent = "Ajoute ta clé API OpenAI d'abord."; return; }
+
+    ui.stealBtn.disabled = true;
+    ui.cfgStatus.className = "status info";
+    ui.cfgStatus.textContent = `Lecture des tweets de @${handle}…`;
+
+    const tweets = await scrapeUserTweets(handle);
+    if (tweets.length < 3) {
+      ui.stealBtn.disabled = false;
+      ui.cfgStatus.className = "status err";
+      ui.cfgStatus.textContent = `Trop peu de tweets de @${handle} trouvés (${tweets.length}). Ouvre x.com/${handle}, scrolle un peu, puis reclique.`;
+      return;
+    }
+
+    ui.cfgStatus.textContent = `${tweets.length} tweets analysés — création du style…`;
+    chrome.runtime.sendMessage(
+      { type: "BUILD_STYLE", payload: { apiKey: state.config.apiKey, model: state.config.model, mode: "steal", handle, tweets } },
+      (resp) => {
+        ui.stealBtn.disabled = false;
+        if (chrome.runtime.lastError) { ui.cfgStatus.className = "status err"; ui.cfgStatus.textContent = "Erreur : " + chrome.runtime.lastError.message; return; }
+        if (!resp || !resp.ok) { ui.cfgStatus.className = "status err"; ui.cfgStatus.textContent = "Erreur : " + ((resp && resp.error) || "inconnue"); return; }
+        const cur = ui.instructions.value.trim();
+        const block = `— Style inspiré de @${handle} —\n${resp.style}`;
+        ui.instructions.value = cur ? cur + "\n\n" + block : block;
+        state.config.instructions = ui.instructions.value;
+        saveConfig();
+        ui.cfgStatus.className = "status ok";
+        ui.cfgStatus.textContent = `Style de @${handle} ajouté à tes instructions ✓`;
+      }
+    );
   }
 
   function updateGenerateLabel() {

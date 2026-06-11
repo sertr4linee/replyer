@@ -590,6 +590,10 @@
     ui.instructions = shadowRoot.getElementById("instructions");
     ui.saveBtn = shadowRoot.getElementById("saveBtn");
     ui.cfgStatus = shadowRoot.getElementById("cfgStatus");
+    ui.personaSelect = shadowRoot.getElementById("personaSelect");
+    ui.personaNew = shadowRoot.getElementById("personaNew");
+    ui.personaRename = shadowRoot.getElementById("personaRename");
+    ui.personaDelete = shadowRoot.getElementById("personaDelete");
     ui.obLaunch = shadowRoot.getElementById("obLaunch");
     ui.stealHandle = shadowRoot.getElementById("stealHandle");
     ui.stealBtn = shadowRoot.getElementById("stealBtn");

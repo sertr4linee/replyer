@@ -1053,51 +1053,121 @@
     el.style.height = el.scrollHeight + 2 + "px";
   }
 
+  const TWEAKS = [
+    { label: "🔄 Autre", t: "Réécris-la complètement différemment : autre angle, autre structure, autre attaque." },
+    { label: "+ court", t: "Rends-la nettement plus courte et plus percutante." },
+    { label: "+ drôle", t: "Rends-la plus drôle / spirituelle, sans forcer." },
+    { label: "- formel", t: "Rends-la moins formelle, plus parlée et naturelle." },
+    { label: "+ concret", t: "Rends-la plus concrète : ajoute un exemple, un chiffre ou un détail précis." }
+  ];
+
   function renderVariants(list) {
     ui.variants.innerHTML = "";
     list.forEach((text, i) => {
-      const len = text.length;
       const card = document.createElement("div");
       card.className = "variant";
+
       const tag = document.createElement("div");
       tag.className = "variant-head";
-      tag.innerHTML = `<span class="variant-tag">Variante ${i + 1}</span><span class="variant-len ${len > 280 ? "over" : ""}">${len}/280</span>`;
+      const lenEl = document.createElement("span");
+      const tagEl = document.createElement("span");
+      tagEl.className = "variant-tag";
+      tagEl.textContent = `Variante ${i + 1}`;
+      tag.append(tagEl, lenEl);
+
       const body = document.createElement("div");
       body.className = "variant-text";
-      body.textContent = text;
+
+      const setText = (val) => {
+        body.textContent = val;
+        lenEl.className = "variant-len" + (val.length > 280 ? " over" : "");
+        lenEl.textContent = `${val.length}/280`;
+      };
+      const getText = () => body.textContent;
+      setText(text);
+
+      // Actions principales
       const actions = document.createElement("div");
       actions.className = "variant-actions";
-
       const editBtn = document.createElement("button");
       editBtn.className = "chip";
       editBtn.innerHTML = "✏️ Éditer";
       editBtn.addEventListener("click", () => {
         ui.draftWrap.style.display = "block";
-        ui.replyText.value = text;
+        ui.replyText.value = getText();
         updateDraftCounter();
         autoGrow(ui.replyText);
         ui.replyText.focus();
         ui.draftWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
         setStatus("Variante chargée dans le brouillon. Édite puis insère.", "info");
       });
-
       const copyBtn = document.createElement("button");
       copyBtn.className = "chip";
       copyBtn.innerHTML = "📋";
       copyBtn.title = "Copier";
       copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(text).then(() => setStatus(`Variante ${i + 1} copiée ✓`, "ok"));
+        navigator.clipboard.writeText(getText()).then(() => setStatus(`Variante ${i + 1} copiée ✓`, "ok"));
       });
-
       const insertBtn = document.createElement("button");
       insertBtn.className = "chip insert";
       insertBtn.innerHTML = "↩️ Insérer";
-      insertBtn.addEventListener("click", () => insertIntoX(text));
-
+      insertBtn.addEventListener("click", () => insertIntoX(getText()));
       actions.append(editBtn, copyBtn, insertBtn);
-      card.append(tag, body, actions);
+
+      // Chips de reformulation (régénérer avec feedback)
+      const tweaks = document.createElement("div");
+      tweaks.className = "variant-tweaks";
+      TWEAKS.forEach((tw) => {
+        const b = document.createElement("button");
+        b.className = "tchip";
+        b.textContent = tw.label;
+        b.title = tw.t;
+        b.addEventListener("click", () => regenerateVariant({ card, body, setText, tweak: tw.t, index: i }));
+        tweaks.appendChild(b);
+      });
+
+      card.append(tag, body, actions, tweaks);
       ui.variants.appendChild(card);
     });
+  }
+
+  function regenerateVariant({ card, body, setText, tweak, index }) {
+    if (!state.selectedTweet) { setStatus("Aucun tweet sélectionné.", "err"); return; }
+    if (!state.config.apiKey) { setStatus("Clé API manquante (onglet Config).", "err"); return; }
+    if (card.classList.contains("regen")) return;
+    card.classList.add("regen");
+    const prev = body.textContent;
+    body.textContent = "…";
+
+    chrome.runtime.sendMessage(
+      {
+        type: "GENERATE_REPLY",
+        payload: {
+          apiKey: state.config.apiKey,
+          model: state.config.model,
+          language: state.config.language,
+          length: state.config.length,
+          count: 1,
+          tweak,
+          instructions: state.config.instructions,
+          tweetText: state.selectedTweet.text,
+          author: [state.selectedTweet.name, state.selectedTweet.handle].filter(Boolean).join(" "),
+          metrics: state.selectedTweet.metrics,
+          images: (state.selectedTweet.media && state.selectedTweet.media.images) || [],
+          context: (state.selectedContext || []).map((c) => ({ author: [c.name, c.handle].filter(Boolean).join(" "), text: c.text }))
+        }
+      },
+      (resp) => {
+        card.classList.remove("regen");
+        if (chrome.runtime.lastError || !resp || !resp.ok || !(resp.variants && resp.variants.length)) {
+          setText(prev);
+          setStatus("Échec de la régénération : " + ((resp && resp.error) || (chrome.runtime.lastError && chrome.runtime.lastError.message) || "inconnue"), "err");
+          return;
+        }
+        setText(resp.variants[0]);
+        setStatus("Variante régénérée ✓", "ok");
+      }
+    );
   }
 
   function showSkeletons(n) {

@@ -85,7 +85,7 @@ Select any tweet, capture its full context, and generate scroll-stopping replies
 2. Open `chrome://extensions` (or `edge://extensions`).
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked** and select the `replyer/` folder.
-5. Open [https://x.com](https://x.com) — the green **Replyer** button appears stacked above the Grok button (bottom-right).
+5. Open [https://x.com](https://x.com) — refresh — the green **Replyer** button appears stacked above the Grok button (bottom-right).
 
 ---
 

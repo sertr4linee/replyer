@@ -18,6 +18,7 @@
     selectedArticle: null,
     selectedTweet: null,
     selectedContext: [],
+    originalPostEl: null,
     lastReply: ""
   };
 
@@ -288,6 +289,30 @@
         .lb-close { position:sticky; top:0; align-self:flex-end; background:#16191d; color:#fff; border:1px solid #38444d; width:34px; height:34px; border-radius:9999px; font-size:20px; cursor:pointer; line-height:1; }
         .lb-close:hover { background:#22272b; }
         .lb-vidnote { font-size:12px; color:#aab2b9; text-align:center; margin-top:4px; }
+
+        /* Vol de style */
+        .steal-row { display:flex; gap:8px; }
+        .steal-row input { flex:2; }
+        .steal-row button { flex:1; margin:0; white-space:nowrap; }
+
+        /* Onboarding overlay */
+        .ob { position:absolute; inset:0; background:#0d0f12; z-index:60; display:flex; flex-direction:column; animation:fade .18s ease; }
+        .ob-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid #23282d; }
+        .ob-title { font-size:16px; font-weight:800; }
+        .ob-x { background:transparent; border:none; color:#8b98a5; font-size:24px; cursor:pointer; }
+        .ob-x:hover { color:#fff; }
+        .ob-progress { height:4px; background:#16191d; }
+        .ob-bar { height:100%; background:#1d9bf0; width:0; transition:width .25s ease; }
+        .ob-body { padding:22px 18px; flex:1; overflow-y:auto; }
+        .ob-step-n { font-size:11px; font-weight:800; color:#1d9bf0; text-transform:uppercase; letter-spacing:.05em; }
+        .ob-q { font-size:19px; font-weight:800; margin:8px 0 4px; line-height:1.3; }
+        .ob-sub { font-size:13px; color:#8b98a5; margin-bottom:16px; }
+        .ob-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .ob-chip { background:#16191d; border:1px solid #2b3137; color:#cfd6dc; border-radius:9999px; padding:7px 13px; font-size:13px; cursor:pointer; transition:.15s; }
+        .ob-chip:hover, .ob-chip.sel { background:rgba(29,155,240,.15); border-color:#1d9bf0; color:#fff; }
+        .ob-nav { display:flex; gap:10px; padding:14px 18px; border-top:1px solid #23282d; }
+        .ob-nav button { margin:0; }
+        .ob-result { width:100%; min-height:220px; }
         .tw-metrics { display:flex; align-items:center; gap:18px; margin-top:12px; padding-top:11px; border-top:1px solid #23282d; color:#7c8893; font-size:12.5px; font-weight:600; }
         .tw-metric { display:flex; align-items:center; gap:5px; }
         .tw-metric.views { margin-left:auto; }
@@ -301,6 +326,8 @@
         .pill.reply { background:rgba(29,155,240,.16); color:#1d9bf0; border:1px solid rgba(29,155,240,.4); }
         .pill.original { background:rgba(124,136,147,.14); color:#9aa6b0; border:1px solid rgba(124,136,147,.3); }
         .pill.cached { background:rgba(0,186,124,.14); color:#00ba7c; border:1px solid rgba(0,186,124,.35); }
+        .pill.clickable { cursor:pointer; transition:filter .15s; }
+        .pill.clickable:hover { filter:brightness(1.25); }
 
         /* Contexte (post initial / fil) */
         .ctx-label { font-size:11px; color:#7c8893; font-weight:800; margin:14px 0 7px; text-transform:uppercase; letter-spacing:.04em; display:flex; align-items:center; gap:6px; }
@@ -407,12 +434,34 @@
             </div>
 
             <label>Ton / style (ta personnalité, ta niche)</label>
+            <button class="ghost" id="obLaunch" style="margin-bottom:8px;">🎯 Lancer l'assistant de style</button>
             <textarea id="instructions" placeholder="Ex : niche tech/SaaS, ton direct et un peu provoc, point de vue de builder, pas d'emojis, toujours un angle concret…"></textarea>
-            <p class="hint">💡 C'est le réglage le plus important pour faire décoller ton compte : décris précisément ta niche et ta voix.</p>
+            <p class="hint">💡 Le réglage le plus important pour faire décoller ton compte. Utilise l'assistant ou le vol de style ci-dessous pour le remplir automatiquement.</p>
+
+            <label>🥷 Voler le style d'un compte</label>
+            <div class="steal-row">
+              <input type="text" id="stealHandle" placeholder="@compte" autocomplete="off" />
+              <button class="ghost" id="stealBtn">Analyser</button>
+            </div>
+            <p class="hint">Ouvre le profil du compte (ou scrolle pour charger ses tweets), puis clique. GPT lit ses posts et en extrait son style pour l'imiter — ajouté à tes instructions.</p>
 
             <button class="primary" id="saveBtn">💾 Enregistrer</button>
             <div class="status ok" id="cfgStatus"></div>
           </section>
+        </div>
+
+        <!-- Onboarding (assistant de style) -->
+        <div class="ob" id="onboarding" style="display:none;">
+          <div class="ob-head">
+            <div class="ob-title">🎯 Assistant de style</div>
+            <button class="ob-x" id="obClose">×</button>
+          </div>
+          <div class="ob-progress"><div class="ob-bar" id="obBar"></div></div>
+          <div class="ob-body" id="obBody"></div>
+          <div class="ob-nav">
+            <button class="ghost" id="obBack">← Retour</button>
+            <button class="primary" id="obNext" style="margin-top:0;">Suivant →</button>
+          </div>
         </div>
       </div>
     `;
@@ -962,6 +1011,7 @@
           tweetText: state.selectedTweet.text,
           author: [state.selectedTweet.name, state.selectedTweet.handle].filter(Boolean).join(" "),
           metrics: state.selectedTweet.metrics,
+          images: (state.selectedTweet.media && state.selectedTweet.media.images) || [],
           context: (state.selectedContext || []).map((c) => ({
             author: [c.name, c.handle].filter(Boolean).join(" "),
             text: c.text

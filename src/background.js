@@ -32,7 +32,7 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SIDEBAR" }).catch(() => {});
 });
 
-async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count, context, metrics, images }) {
+async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count, context, metrics, images, tweak }) {
   if (!apiKey) throw new Error("Clé API OpenAI manquante. Renseigne-la dans la sidebar.");
   if (!tweetText) throw new Error("Aucun texte de tweet à traiter.");
   const n = Math.min(Math.max(parseInt(count, 10) || 3, 1), 5);
@@ -137,6 +137,7 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
     ctxBlock
       ? "Sers-toi du contexte ci-dessus pour que ta réponse tombe juste, mais adresse-toi bien au dernier tweet."
       : "",
+    tweak ? `CONSIGNE DE REFORMULATION (prioritaire) : ${tweak}` : "",
     `Analyse les angles les plus percutants, puis écris ${n} réponses distinctes. Réponds uniquement avec l'objet JSON demandé.`
   ]
     .filter(Boolean)

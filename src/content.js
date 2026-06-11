@@ -22,6 +22,8 @@
     selectedTweet: null,
     selectedContext: [],
     originalPostEl: null,
+    radarScores: new Map(),
+    radarOverlayOn: false,
     lastReply: ""
   };
 
@@ -316,6 +318,11 @@
         .chip:hover { background:#2c2c2c; border-color:var(--border-strong); color:var(--fg); }
         .chip.insert { background:var(--accent); border-color:transparent; color:var(--accent-fg); margin-left:auto; }
         .chip.insert:hover { background:var(--accent-hover); }
+        .variant-tweaks { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; padding-top:9px; border-top:1px dashed var(--border); }
+        .tchip { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 9px; font-size:11.5px; font-weight:600; cursor:pointer; transition:.13s; }
+        .tchip:hover { background:var(--card-2); border-color:var(--accent); color:var(--accent); }
+        .variant.regen { opacity:.65; pointer-events:none; }
+        .variant.regen .variant-text { color:var(--muted-2); font-style:italic; }
 
         /* Skeleton chargement */
         .skel { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:13px; overflow:hidden; }
@@ -402,6 +409,8 @@
         .badge { display:inline-block; background:var(--accent); color:var(--accent-fg); font-size:10px; padding:2px 6px; border-radius:5px; vertical-align:middle; font-weight:700; }
 
         /* Growth Radar */
+        .switch-row { display:flex; align-items:center; gap:8px; margin:12px 0 0; font-size:12.5px; color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0; cursor:pointer; }
+        .switch-row input { width:auto; accent-color:var(--accent); cursor:pointer; }
         .radar-list { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
         .radar-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; transition:border-color .13s; }
         .radar-card:hover { border-color:var(--border-strong); }
@@ -476,6 +485,7 @@
           <section id="tab-radar">
             <button class="primary" id="radarScan" style="margin-top:0;">📡 Scanner le fil</button>
             <p class="hint">Replyer analyse les tweets de ton fil et classe les <b>meilleures opportunités de réponse</b> selon ta niche (onglet Config), leur fraîcheur et leur portée.</p>
+            <label class="switch-row"><input type="checkbox" id="radarOverlay" checked> <span>Afficher les scores directement dans le fil</span></label>
             <div class="status info" id="radarStatus"></div>
             <div class="radar-list" id="radarList"></div>
           </section>
@@ -581,6 +591,7 @@
     ui.radarScan = shadowRoot.getElementById("radarScan");
     ui.radarStatus = shadowRoot.getElementById("radarStatus");
     ui.radarList = shadowRoot.getElementById("radarList");
+    ui.radarOverlay = shadowRoot.getElementById("radarOverlay");
     // config
     ui.apiKey = shadowRoot.getElementById("apiKey");
     ui.model = shadowRoot.getElementById("model");
@@ -638,6 +649,14 @@
     });
     ui.insertBtn.addEventListener("click", () => insertIntoX(ui.replyText.value));
     ui.radarScan.addEventListener("click", () => runRadar());
+    ui.radarOverlay.checked = state.config.radarOverlay !== false;
+    ui.radarOverlay.addEventListener("change", () => {
+      state.config.radarOverlay = ui.radarOverlay.checked;
+      saveConfig();
+      state.radarOverlayOn = ui.radarOverlay.checked && state.radarScores.size > 0;
+      if (!state.radarOverlayOn) removeRadarBadges();
+      else paintRadarBadges();
+    });
     ui.saveBtn.addEventListener("click", () => {
       state.config.apiKey = ui.apiKey.value.trim();
       state.config.model = ui.model.value;

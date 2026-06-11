@@ -8,7 +8,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) }));
     return true; // réponse asynchrone
   }
+  if (msg && msg.type === "BUILD_STYLE") {
+    buildStyle(msg.payload)
+      .then((style) => sendResponse({ ok: true, style }))
+      .catch((err) => sendResponse({ ok: false, error: String(err && err.message ? err.message : err) }));
+    return true;
+  }
 });
+
+function modelSupportsVision(model) {
+  return /gpt-4o|gpt-4\.1|gpt-5|o3|o4/i.test(model || "");
+}
 
 // Clic sur l'icône d'extension dans la barre d'outils -> toggle la sidebar
 chrome.action.onClicked.addListener((tab) => {
@@ -16,10 +26,12 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.tabs.sendMessage(tab.id, { type: "TOGGLE_SIDEBAR" }).catch(() => {});
 });
 
-async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count, context, metrics }) {
+async function generateReply({ apiKey, model, tweetText, author, instructions, language, length, count, context, metrics, images }) {
   if (!apiKey) throw new Error("Clé API OpenAI manquante. Renseigne-la dans la sidebar.");
   if (!tweetText) throw new Error("Aucun texte de tweet à traiter.");
   const n = Math.min(Math.max(parseInt(count, 10) || 3, 1), 5);
+  const imgs = (Array.isArray(images) ? images : []).filter((u) => typeof u === "string" && /^https?:/.test(u)).slice(0, 2);
+  const useVision = imgs.length > 0 && modelSupportsVision(model);
 
   const lang = language || "EXACTEMENT la même langue que le tweet d'origine";
   const lengthHint =
@@ -104,6 +116,7 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
     ctxBlock,
     author ? `Auteur du tweet à commenter : ${author}` : "",
     metricsLine,
+    useVision ? "Le tweet contient une ou plusieurs IMAGES (jointes ci-dessous). Analyse-les et tiens-en compte dans ta réponse (ce qu'on y voit, le contexte visuel)." : "",
     "LE TWEET AUQUEL TU RÉPONDS (c'est à CELUI-CI que ta réponse s'adresse) :",
     `"""${tweetText}"""`,
     "",
@@ -115,6 +128,10 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
     .filter(Boolean)
     .join("\n");
 
+  const userContent = useVision
+    ? [{ type: "text", text: user }, ...imgs.map((u) => ({ type: "image_url", image_url: { url: u, detail: "low" } }))]
+    : user;
+
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -125,7 +142,7 @@ async function generateReply({ apiKey, model, tweetText, author, instructions, l
       model: model || "gpt-4o-mini",
       messages: [
         { role: "system", content: system },
-        { role: "user", content: user }
+        { role: "user", content: userContent }
       ],
       temperature: 0.9,
       presence_penalty: 0.4,

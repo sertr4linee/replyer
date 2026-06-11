@@ -242,7 +242,10 @@
         input::placeholder, textarea::placeholder { color:var(--muted-2); }
         input:hover, select:hover, textarea:hover { border-color:var(--border-strong); }
         input:focus, select:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(62,207,142,.12); }
-        textarea { resize:none; min-height:64px; max-height:320px; line-height:1.5; overflow-y:auto; }
+        textarea { resize:none; min-height:64px; max-height:260px; line-height:1.5; overflow-y:auto; }
+        /* Le persona peut être long : on le laisse s'étendre largement avant de scroller */
+        #instructions { min-height:120px; max-height:75vh; }
+        #obResult { max-height:46vh; }
         select { appearance:none; -webkit-appearance:none; background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a0a0a0' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; padding-right:30px; cursor:pointer; }
         .row { display:flex; gap:8px; }
         .row > div { flex:1; min-width:0; }
@@ -552,6 +555,7 @@
         shadowRoot.querySelectorAll("section").forEach((s) => s.classList.remove("active"));
         tab.classList.add("active");
         shadowRoot.getElementById("tab-" + tab.dataset.tab).classList.add("active");
+        if (tab.dataset.tab === "config") autoGrow(ui.instructions);
       });
     });
 
@@ -768,11 +772,12 @@
     ui.draftCounter.classList.toggle("over", len > 280);
   }
 
-  // Auto-redimensionne un textarea à son contenu (jusqu'à un max géré en CSS via max-height)
+  // Auto-redimensionne un textarea à son contenu. Le plafond éventuel est géré
+  // en CSS via max-height (différent selon le champ), pas en JS.
   function autoGrow(el) {
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = Math.min(el.scrollHeight + 2, 320) + "px";
+    el.style.height = el.scrollHeight + 2 + "px";
   }
 
   function renderVariants(list) {

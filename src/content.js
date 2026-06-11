@@ -278,6 +278,16 @@
         .tw-handle { color:#7c8893; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .tw-body { font-size:14.5px; line-height:1.5; color:#e7e9ea; margin-top:10px; white-space:pre-wrap; word-break:break-word; max-height:190px; overflow:auto; }
         .tw-media { margin-top:9px; font-size:12px; color:#7c8893; background:#0d0f12; border:1px solid #23282d; border-radius:9px; padding:6px 9px; display:inline-block; }
+        .tw-media.clickable { cursor:pointer; color:#1d9bf0; border-color:rgba(29,155,240,.35); transition:.15s; }
+        .tw-media.clickable:hover { background:rgba(29,155,240,.1); }
+
+        /* Lightbox média */
+        .lightbox { position:absolute; inset:0; background:rgba(0,0,0,.82); z-index:50; display:flex; align-items:center; justify-content:center; padding:18px; animation:fade .15s ease; }
+        .lb-inner { position:relative; max-width:100%; max-height:100%; overflow:auto; display:flex; flex-direction:column; gap:10px; }
+        .lb-img { max-width:100%; border-radius:12px; display:block; box-shadow:0 8px 30px rgba(0,0,0,.5); }
+        .lb-close { position:sticky; top:0; align-self:flex-end; background:#16191d; color:#fff; border:1px solid #38444d; width:34px; height:34px; border-radius:9999px; font-size:20px; cursor:pointer; line-height:1; }
+        .lb-close:hover { background:#22272b; }
+        .lb-vidnote { font-size:12px; color:#aab2b9; text-align:center; margin-top:4px; }
         .tw-metrics { display:flex; align-items:center; gap:18px; margin-top:12px; padding-top:11px; border-top:1px solid #23282d; color:#7c8893; font-size:12.5px; font-weight:600; }
         .tw-metric { display:flex; align-items:center; gap:5px; }
         .tw-metric.views { margin-left:auto; }
@@ -733,6 +743,8 @@
       if (atFront) ctx.unshift(b); else ctx.push(b);
     };
 
+    let anchorEl = null; // élément DOM du post initial (pour scroller dessus)
+
     // Cas A : réponse explicite (timeline) → on remonte la chaîne par handle
     const head = tweetHead(article);
     const hasReplyingTo = /Replying to|En réponse à/i.test(head);
@@ -742,7 +754,7 @@
       for (let j = idx - 1; j >= 0 && idx - j <= 3; j--) {
         const prev = all[j];
         const ph = (tweetHandle(prev) || "").replace("@", "").toLowerCase();
-        if (ph && handles.has(ph)) chain.push(extractBasic(prev));
+        if (ph && handles.has(ph)) { chain.push(extractBasic(prev)); anchorEl = prev; }
         else break;
       }
       chain.reverse().forEach((b) => add(b));
@@ -753,29 +765,29 @@
     const selId = permalinkId(article);
     if (urlId && selId && selId !== urlId) {
       const focused = all.find((a) => permalinkId(a) === urlId);
-      if (focused && focused !== article) add(extractBasic(focused), true);
+      if (focused && focused !== article) { add(extractBasic(focused), true); anchorEl = focused; }
     }
 
-    return { context: ctx, hasReplyingTo };
+    return { context: ctx, hasReplyingTo, anchorEl };
   }
 
   // Récupère le contexte avec mise en cache (persiste si le parent quitte le DOM au scroll)
   function getThreadContext(article) {
     const selId = permalinkId(article);
-    const { context, hasReplyingTo } = computeContextFromDOM(article);
+    const { context, hasReplyingTo, anchorEl } = computeContextFromDOM(article);
 
     if (context.length) {
       if (selId) threadCache.set(selId, context); // met le post initial en cache
-      return { context, isReply: true, fromCache: false };
+      return { context, isReply: true, fromCache: false, anchorEl };
     }
 
     // Rien dans le DOM : on tente le cache (le parent a peut-être disparu au scroll)
     if (selId && threadCache.has(selId)) {
-      return { context: threadCache.get(selId), isReply: true, fromCache: true };
+      return { context: threadCache.get(selId), isReply: true, fromCache: true, anchorEl: null };
     }
 
     // Pas de contexte trouvé : on reste sur la détection « réponse » via le label
-    return { context: [], isReply: hasReplyingTo, fromCache: false };
+    return { context: [], isReply: hasReplyingTo, fromCache: false, anchorEl: null };
   }
 
   // Mise en cache passive des fils visibles (appelée périodiquement)
@@ -795,7 +807,14 @@
 
   function renderTweetCard(t) {
     const m = t.metrics || {};
+    const md = t.media || {};
     const item = (svg, val, cls) => (val != null ? `<span class="tw-metric ${cls || ""}">${svg}${fmtCount(val)}</span>` : "");
+    let mediaLabel = "";
+    if (md.images && md.images.length) {
+      mediaLabel = `🖼️ ${md.images.length} image${md.images.length > 1 ? "s" : ""}${md.hasVideo ? " + vidéo" : ""} — cliquer pour prévisualiser`;
+    } else if (md.hasVideo) {
+      mediaLabel = "🎬 Vidéo — cliquer pour l'aperçu";
+    }
     ui.tweetCard.innerHTML = `
       <div class="tw-head">
         ${t.avatar ? `<img class="tw-avatar" src="${escapeHtml(t.avatar)}" alt="">` : `<div class="tw-avatar"></div>`}
@@ -805,7 +824,7 @@
         </div>
       </div>
       <div class="tw-body">${escapeHtml(t.text) || '<span style="color:#7c8893">(texte non détecté)</span>'}</div>
-      ${t.hasMedia ? `<div class="tw-media">🖼️ Contient un média (image / vidéo)</div>` : ""}
+      ${mediaLabel ? `<div class="tw-media clickable" id="mediaBtn">${mediaLabel}</div>` : ""}
       <div class="tw-metrics">
         ${item(SVG.reply, m.replies)}
         ${item(SVG.repost, m.reposts)}
@@ -813,6 +832,25 @@
         ${item(SVG.view, m.views, "views")}
       </div>
     `;
+    const mb = ui.tweetCard.querySelector("#mediaBtn");
+    if (mb) mb.addEventListener("click", () => openLightbox(md));
+  }
+
+  function openLightbox(media) {
+    if (!media || !media.has) return;
+    let lb = shadowRoot.getElementById("lightbox");
+    if (!lb) {
+      lb = document.createElement("div");
+      lb.id = "lightbox";
+      lb.className = "lightbox";
+      lb.addEventListener("click", (e) => { if (e.target === lb || e.target.classList.contains("lb-close")) lb.remove(); });
+      shadowRoot.querySelector(".panel").appendChild(lb);
+    }
+    const imgs = (media.images || []).map((u) => `<img class="lb-img" src="${escapeHtml(u)}" alt="">`).join("");
+    const vid = media.hasVideo
+      ? `<div class="lb-video">${media.videoPoster ? `<img class="lb-img" src="${escapeHtml(media.videoPoster)}" alt="">` : ""}<div class="lb-vidnote">🎬 Aperçu vidéo (lecture sur X). Le contenu vidéo n'est pas envoyé à l'IA.</div></div>`
+      : "";
+    lb.innerHTML = `<div class="lb-inner"><button class="lb-close" title="Fermer">×</button>${imgs}${vid}</div>`;
   }
 
   function renderContext(list, isReply, fromCache) {

@@ -14,6 +14,7 @@
       instructions: "",
       personas: [],
       activePersonaId: "",
+      radarOverlay: true,
       onboarded: false
     },
     selecting: false,
@@ -1001,8 +1002,58 @@
         ui.radarStatus.className = "status ok";
         ui.radarStatus.textContent = `${opps.length} opportunité(s) classée(s) ✓`;
         renderOpportunities(opps, dataById);
+
+        // Overlay in-feed : mémorise les scores et peint les badges sur les tweets
+        removeRadarBadges();
+        state.radarScores = new Map(opps.map((o) => [o.id, { score: o.score, reason: o.reason }]));
+        state.radarOverlayOn = ui.radarOverlay.checked && state.radarScores.size > 0;
+        if (state.radarOverlayOn) paintRadarBadges();
       }
     );
+  }
+
+  // ── Overlay des scores Radar dans le fil ─────────────────────────────────
+  function radarScoreClass(score) {
+    return score >= 75 ? "hot" : score >= 55 ? "warm" : "mild";
+  }
+  function radarBadgeStyle(score) {
+    const c = radarScoreClass(score);
+    const map = {
+      hot: "background:rgba(62,207,142,.92);color:#0a1f16;",
+      warm: "background:rgba(245,179,80,.92);color:#1a1205;",
+      mild: "background:rgba(60,60,60,.92);color:#ededed;"
+    };
+    return map[c];
+  }
+  function removeRadarBadges() {
+    document.querySelectorAll("[data-replyer-badge]").forEach((b) => b.remove());
+  }
+  function paintRadarBadges() {
+    if (!state.radarOverlayOn || !state.radarScores.size) return;
+    document.querySelectorAll('article[data-testid="tweet"]').forEach((art) => {
+      const id = permalinkId(art);
+      if (!id || !state.radarScores.has(id)) return;
+      if (art.querySelector(":scope > [data-replyer-badge]")) return; // déjà peint
+      const { score, reason } = state.radarScores.get(id);
+      const b = document.createElement("div");
+      b.setAttribute("data-replyer-badge", "1");
+      b.textContent = "📡 " + score;
+      b.title = reason ? `Replyer : ${reason}` : "Opportunité Replyer";
+      b.style.cssText =
+        "position:absolute;top:10px;right:50px;z-index:30;padding:2px 8px;border-radius:7px;" +
+        "font:700 12px ui-sans-serif,system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);" +
+        "user-select:none;line-height:18px;" + radarBadgeStyle(score);
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleSidebar(true);
+        switchTab("reply");
+        selectTweet(art);
+        art.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      if (getComputedStyle(art).position === "static") art.style.position = "relative";
+      art.appendChild(b);
+    });
   }
 
   function renderOpportunities(opps, dataById) {
@@ -1718,6 +1769,7 @@
     obs.observe(document.body, { childList: true, subtree: true });
     setInterval(ensureNavButton, 1500);
     setInterval(cacheVisibleThreads, 2500);
+    setInterval(paintRadarBadges, 1200);
     window.addEventListener("resize", () => ensureNavButton(), true);
     window.addEventListener("scroll", () => ensureNavButton(), true);
   });

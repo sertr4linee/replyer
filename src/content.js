@@ -972,6 +972,7 @@
     const obs = new MutationObserver(() => ensureNavButton());
     obs.observe(document.body, { childList: true, subtree: true });
     setInterval(ensureNavButton, 1500);
+    setInterval(cacheVisibleThreads, 2500);
     window.addEventListener("resize", () => ensureNavButton(), true);
     window.addEventListener("scroll", () => ensureNavButton(), true);
   });
